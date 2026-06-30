@@ -1,0 +1,9 @@
+# Name,     Type, SubType, Offset,   Size,    Flags
+# Originale Partitionen beibehalten — app0 bleibt bei 0x10000 (PlatformIO-Upload-Kompatibilität)
+# Neue msgstore-Partition (40KB NVS) für Chatverlauf-Ringspeicher (50 Slots)
+# Einmalige Änderung vor Erstauslieferung (2026-06-19) — danach nicht mehr ändern
+nvs,        data, nvs,     0x9000,   0x5000,
+phy_init,   data, phy,     0xe000,   0x1000,
+app0,       app,  factory, 0x10000,  0x1D0000,
+msgstore,   data, nvs,     0x1E0000, 0xA000,
+spiffs,     data, spiffs,  0x1EA000, 0x16000,

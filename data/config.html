@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ProjektX — Konfiguration</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #111;
+    color: #eee;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px;
+  }
+  h1 { font-size: 1.2rem; font-weight: 600; margin-bottom: 8px; color: #fff; }
+  .subtitle { font-size: 0.8rem; color: #666; margin-bottom: 32px; }
+  .card {
+    background: #1a1a1a;
+    border: 1px solid #2a2a2a;
+    border-radius: 8px;
+    padding: 20px;
+    width: 100%;
+    max-width: 400px;
+    margin-bottom: 16px;
+  }
+  .card h2 { font-size: 0.85rem; font-weight: 600; color: #888; text-transform: uppercase;
+             letter-spacing: 0.05em; margin-bottom: 16px; }
+  label { display: block; font-size: 0.85rem; color: #aaa; margin-bottom: 6px; }
+  input, select {
+    width: 100%;
+    background: #222;
+    border: 1px solid #333;
+    border-radius: 6px;
+    color: #eee;
+    padding: 10px 12px;
+    font-size: 0.95rem;
+    margin-bottom: 16px;
+    outline: none;
+  }
+  input:focus, select:focus { border-color: #555; }
+  .btn {
+    width: 100%;
+    padding: 12px;
+    border-radius: 6px;
+    border: none;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .btn:active { opacity: 0.7; }
+  .btn-primary { background: #2563eb; color: #fff; }
+  .btn-secondary { background: #2a2a2a; color: #ccc; border: 1px solid #333; }
+  .btn-danger { background: #7f1d1d; color: #fca5a5; }
+  .status {
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    margin-bottom: 16px;
+    display: none;
+  }
+  .status.ok { background: #14532d; color: #86efac; display: block; }
+  .status.err { background: #7f1d1d; color: #fca5a5; display: block; }
+  #navbar {
+    display: flex;
+    align-items: center;
+    padding: 6px 8px;
+    background: #111;
+    border-bottom: 1px solid #333;
+    width: 100%;
+    max-width: 600px;
+  }
+  #navbar > * + * { margin-left: 8px; }
+  .nav-btn {
+    background: #2a2a2a;
+    color: #e0e0e0;
+    border: 1px solid #444;
+    border-radius: 6px;
+    padding: 8px 10px;
+    min-height: 44px;
+    font-size: 13px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    text-decoration: none;
+    flex-shrink: 0;
+  }
+  .nav-btn.icon { min-width: 44px; font-size: 20px; justify-content: center; }
+  #nav-center { flex: 1; text-align: center; min-width: 0; overflow: hidden; }
+  #nav-title { font-size: 15px; font-weight: bold; }
+  #unread-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #d44; display: none; flex-shrink: 0;
+  }
+  #channel-dropdown {
+    background: #222;
+    border-bottom: 1px solid #333;
+    width: 100%;
+    max-width: 600px;
+    display: none;
+  }
+  .ch-item {
+    padding: 12px 16px; min-height: 44px;
+    display: flex; align-items: center; justify-content: space-between;
+    cursor: pointer; color: #e0e0e0; font-size: 15px;
+    border-bottom: 1px solid #2a2a2a;
+  }
+  .ch-item.active { background: #1e3a5f; font-weight: bold; }
+  .pin-screen {
+    width: 100%;
+    max-width: 400px;
+  }
+  .pin-input-row {
+    display: flex;
+    margin-bottom: 16px;
+  }
+  .pin-input-row > * + * { margin-left: 8px; }
+  .pin-input-row input {
+    text-align: center;
+    font-size: 1.4rem;
+    letter-spacing: 0.2em;
+    margin-bottom: 0;
+  }
+  .channel-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid #222;
+    font-size: 0.9rem;
+  }
+  .channel-row:last-child { border-bottom: none; }
+  .channel-name { color: #eee; }
+  .channel-active { color: #60a5fa; font-size: 0.75rem; margin-left: 8px; }
+  .btn-small {
+    padding: 4px 10px;
+    font-size: 0.75rem;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    background: #2a2a2a;
+    color: #888;
+  }
+  .btn-small:hover { background: #333; color: #ccc; }
+  .hidden { display: none; }
+  .psk-display {
+    font-family: monospace;
+    font-size: 0.7rem;
+    color: #555;
+    word-break: break-all;
+    margin-top: -12px;
+    margin-bottom: 16px;
+  }
+</style>
+</head>
+<body>
+
+<div id="navbar">
+  <button class="nav-btn" id="btn-channels" onclick="toggleDD()">
+    <span id="btn-ch-text">&#8801; Kan&auml;le &#9660;</span>
+    <span id="unread-dot"></span>
+  </button>
+  <div id="nav-center">
+    <div id="nav-title">Konfiguration</div>
+  </div>
+  <a class="nav-btn icon" href="/" title="Zum Chat">&#9993;</a>
+</div>
+<div id="channel-dropdown"></div>
+
+<!-- PIN-Eingabe -->
+<div class="pin-screen" id="pinScreen">
+  <div class="card">
+    <h2>Einstellungs-PIN</h2>
+    <div id="pinStatus" class="status"></div>
+    <label>6-stellige PIN eingeben</label>
+    <div class="pin-input-row">
+      <input type="password" inputmode="numeric" maxlength="6" id="pinInput"
+             placeholder="——————" autocomplete="off">
+    </div>
+    <button class="btn btn-primary" onclick="checkPin()">Entsperren</button>
+  </div>
+</div>
+
+<!-- Konfiguration (nach PIN) -->
+<div id="configScreen" class="hidden">
+
+  <div id="globalStatus" class="status"></div>
+
+  <!-- 1. Gerätename -->
+  <div class="card">
+    <h2>Gerät</h2>
+    <label>Gerätename (max. 20 Zeichen)</label>
+    <input type="text" id="deviceName" maxlength="20" placeholder="z.B. Papa, Oma, Gerät 01">
+    <button class="btn btn-primary" onclick="saveName()">Speichern</button>
+  </div>
+
+  <!-- 2. Funk-Profil -->
+  <div class="card">
+    <h2>Funk-Profil</h2>
+    <label>Funk-Profil wählen</label>
+    <select id="presetSelect" onchange="onPresetChange()">
+      <option value="0">Standard — ausgewogen (SF9, Subband M, 1% Duty Cycle)</option>
+      <option value="1">Reichweite — maximal, zum Testen (SF12, Subband M, 1% Duty Cycle)</option>
+      <option value="2">Organisation — eigene Frequenz (SF9, Subband P, 10% Duty Cycle)</option>
+      <option value="3">Schnelle Nachrichten — kurze Airtime (SF7, Subband M, 1% Duty Cycle)</option>
+    </select>
+    <p id="presetWarning" style="color:#fca5a5;font-size:0.78rem;margin-top:-12px;margin-bottom:12px;display:none;"></p>
+    <p style="color:#555;font-size:0.75rem;margin-top:-12px;margin-bottom:16px;">
+      Geräte mit verschiedenen Funk-Profilen können nicht miteinander kommunizieren.
+    </p>
+    <button class="btn btn-primary" onclick="savePreset()">Speichern</button>
+  </div>
+
+  <!-- 3. Kanäle -->
+  <div class="card">
+    <h2>Kanäle</h2>
+    <div id="channelList">
+      <p style="color:#555;font-size:0.85rem;">Keine Kanäle konfiguriert.</p>
+    </div>
+    <h3 style="font-size:0.85rem;color:#888;margin:16px 0 8px 0;">Neuen Kanal erstellen</h3>
+    <div>
+      <label>Kanalname</label>
+      <input type="text" id="newChannelName" maxlength="10" placeholder="Kanalname">
+      <button class="btn btn-primary" onclick="createChannel()">Kanal erstellen</button>
+    </div>
+    <h3 style="font-size:0.85rem;color:#888;margin:16px 0 8px 0;">Kanal manuell hinzufügen</h3>
+    <div style="padding-top:8px;border-top:1px solid #222;">
+      <label>Kanalname</label>
+      <input type="text" id="importChannelName" maxlength="10" placeholder="Kanalname">
+      <label>Netzwerkschlüssel (64 Zeichen)</label>
+      <input type="text" id="importPsk" maxlength="64" placeholder="Netzwerkschlüssel (64 Zeichen)"
+             style="font-family:monospace;font-size:0.8rem;">
+      <button class="btn btn-secondary" onclick="importChannel()">Netzwerkschlüssel eingeben</button>
+    </div>
+  </div>
+
+  <!-- 4. Kanal übertragen -->
+  <div class="card">
+    <h2>Kanal übertragen</h2>
+    <div id="pairingIdle">
+      <p style="color:#aaa;font-size:0.85rem;margin-bottom:16px;">
+        Einen Kanal sicher per Funk auf ein anderes Gerät übertragen.
+      </p>
+      <label>Kanal zum Teilen</label>
+      <select id="pairingChannel"></select>
+      <div style="margin:12px 0;">
+        <label style="display:flex;align-items:flex-start;cursor:pointer;margin-bottom:4px;">
+          <input type="checkbox" id="pairingLockName" style="width:auto;margin:3px 8px 0 0;">
+          <span style="font-size:0.82rem;color:#aaa;">Absendername auf dem Empfängergerät sperren<br>
+          <span style="font-size:0.75rem;color:#666;">Der Empfänger kann den Namen dann nicht selbst ändern.</span></span>
+        </label>
+      </div>
+      <button class="btn btn-primary" onclick="startPairingGive()" style="margin-bottom:12px;">Kanal senden</button>
+      <button class="btn btn-secondary" onclick="startPairingReceive()">Kanal empfangen</button>
+    </div>
+    <div id="pairingActive" class="hidden">
+      <div id="pairingStateText" style="color:#aaa;font-size:0.85rem;margin-bottom:8px;"></div>
+      <div id="pairingPin" style="font-size:2.2rem;font-weight:bold;text-align:center;letter-spacing:0.3em;margin:16px 0;color:#60a5fa;" class="hidden"></div>
+      <div id="pairingTimer" style="color:#666;font-size:0.8rem;text-align:center;margin-bottom:16px;"></div>
+      <div id="pairingActions"></div>
+      <button class="btn btn-danger" onclick="abortPairing()" style="margin-top:12px;">Abbrechen</button>
+    </div>
+    <div id="pairingDone" class="hidden">
+      <p id="pairingDoneText" style="color:#86efac;font-size:0.9rem;"></p>
+      <button class="btn btn-secondary" onclick="resetPairingUI()" style="margin-top:12px;">OK</button>
+    </div>
+    <div id="pairingErrorDiv" class="hidden">
+      <p id="pairingErrorText" style="color:#fca5a5;font-size:0.85rem;white-space:pre-line;"></p>
+      <button class="btn btn-primary" onclick="resetPairingUI()" style="margin-top:12px;">Erneut versuchen</button>
+    </div>
+  </div>
+
+  <!-- 5. PIN ändern -->
+  <div class="card">
+    <h2>Einstellungs-PIN ändern</h2>
+    <label>Neue PIN (6 Ziffern)</label>
+    <input type="password" inputmode="numeric" maxlength="6" id="newPin" placeholder="——————">
+    <label>PIN wiederholen</label>
+    <input type="password" inputmode="numeric" maxlength="6" id="newPinRepeat" placeholder="——————">
+    <button class="btn btn-secondary" onclick="changePin()">PIN ändern</button>
+  </div>
+
+  <!-- 6. WLAN-Passwort -->
+  <div class="card">
+    <h2>WLAN-Passwort</h2>
+    <label>Neues Passwort</label>
+    <input type="password" id="wifiPassNew" placeholder="Mindestens 8 Zeichen" autocomplete="new-password">
+    <label>Wiederholen</label>
+    <input type="password" id="wifiPassRepeat" placeholder="Wiederholen" autocomplete="new-password">
+    <button class="btn btn-secondary" onclick="changeWifiPass()">Passwort ändern</button>
+    <div id="wifipassStatus" class="status"></div>
+    <p style="color:#aaa;font-size:0.75rem;margin-top:10px;margin-bottom:0;">
+      &#9888; Nach dem Speichern verlierst du die WLAN-Verbindung.<br>
+      Verbinde dich erneut mit dem neuen Passwort.
+    </p>
+  </div>
+
+  <!-- 7. Reichweite testen -->
+  <div class="card">
+    <h2>Reichweite testen</h2>
+    <label style="display:flex;align-items:center;cursor:pointer;margin-bottom:0;">
+      <input type="checkbox" id="autoReplyToggle" style="width:auto;margin:0 10px 0 0;" onchange="onAutoReplyToggle()">
+      Automatisch antworten (für Reichweitentests)
+    </label>
+    <p style="color:#555;font-size:0.75rem;margin-top:8px;margin-bottom:0;">
+      Antwortet auf jede empfangene Nachricht automatisch mit der gemessenen
+      Signalstärke. Für Reichweitentests mit zwei Geräten — beide Geräte
+      tauschen sich dann fortlaufend aus (unter Einhaltung der
+      Sendepause). Wird nicht gespeichert — nach Neustart wieder aus.
+    </p>
+  </div>
+
+  <!-- 7. Entwickler -->
+  <div class="card">
+    <h2>Entwickler</h2>
+    <label style="display:flex;align-items:center;cursor:pointer;margin-bottom:0;">
+      <input type="checkbox" id="debugToggle" style="width:auto;margin:0 10px 0 0;" onchange="onDebugToggle()">
+      Technische Details im Chat anzeigen
+    </label>
+    <p style="color:#555;font-size:0.75rem;margin-top:8px;margin-bottom:0;">
+      Zeigt Signalstärke und Sendezeit bei jeder Nachricht
+      sowie die aktuelle Sendepause.
+    </p>
+  </div>
+
+</div>
+
+<script>
+let currentPin = '';
+
+// ----------------------------------------------------------------
+// Debug-Toggle
+// ----------------------------------------------------------------
+function onDebugToggle() {
+  const checked = document.getElementById('debugToggle').checked;
+  localStorage.setItem('px_debug', checked ? '1' : '0');
+}
+
+// ----------------------------------------------------------------
+// Preset-Warnhinweise
+// ----------------------------------------------------------------
+const PRESET_WARNINGS = {
+  0: '',
+  1: '⚠ SF12 erzeugt sehr lange Sendezeiten. Nach jeder Nachricht ist eine ' +
+     'Pflichtpause von ca. 250 Sekunden (~4 Minuten) einzuhalten. Nur zum ' +
+     'Testen der maximalen Reichweite gedacht.',
+  2: '⚠ Eigene Frequenz im Subband P (10% Duty Cycle). Bewusst getrennt vom ' +
+     'Standard-Netz — nur für Organisationen mit eigenem Kanal gedacht.',
+  3: ''
+};
+
+function onPresetChange() {
+  const preset = document.getElementById('presetSelect').value;
+  const warn = document.getElementById('presetWarning');
+  const text = PRESET_WARNINGS[preset] || '';
+  if (text) {
+    warn.textContent = text;
+    warn.style.display = 'block';
+  } else {
+    warn.style.display = 'none';
+  }
+}
+
+// ----------------------------------------------------------------
+// Auto-Reply Toggle
+// ----------------------------------------------------------------
+async function onAutoReplyToggle() {
+  const enabled = document.getElementById('autoReplyToggle').checked;
+  await postConfig('/config/set/autoreply', {enabled});
+}
+
+// ----------------------------------------------------------------
+// PIN prüfen
+// ----------------------------------------------------------------
+async function checkPin() {
+  const pin = document.getElementById('pinInput').value.trim();
+  if (pin.length !== 6 || !/^\d+$/.test(pin)) {
+    showStatus('pinStatus', 'PIN muss genau 6 Ziffern sein.', false);
+    return;
+  }
+  try {
+    const r = await fetch('/config/auth', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({pin})
+    });
+    if (r.ok) {
+      currentPin = pin;
+      document.getElementById('pinScreen').classList.add('hidden');
+      document.getElementById('configScreen').classList.remove('hidden');
+      loadConfig();
+    } else {
+      showStatus('pinStatus', 'Falsche PIN.', false);
+    }
+  } catch(e) {
+    showStatus('pinStatus', 'Verbindungsfehler.', false);
+  }
+}
+
+// ----------------------------------------------------------------
+// Konfiguration laden
+// ----------------------------------------------------------------
+async function loadConfig() {
+  try {
+    const r = await fetch('/config/get', {
+      headers: {'X-Pin': currentPin}
+    });
+    if (!r.ok) return;
+    const data = await r.json();
+    document.getElementById('deviceName').value = data.name || '';
+    document.getElementById('presetSelect').value = (data.preset != null ? data.preset : 0);
+    document.getElementById('autoReplyToggle').checked = data.autoReply || false;
+    onPresetChange();
+    renderChannels(data.channels || []);
+
+    // Pairing-Dropdown befüllen
+    const pSel = document.getElementById('pairingChannel');
+    pSel.innerHTML = '';
+    (data.channels || []).forEach(ch => {
+      const opt = document.createElement('option');
+      opt.value = ch.name;
+      opt.textContent = ch.name;
+      pSel.appendChild(opt);
+    });
+
+    // Aktives Pairing wiederherstellen
+    checkActivePairing();
+
+    // Debug-Toggle aus localStorage initialisieren
+    document.getElementById('debugToggle').checked = localStorage.getItem('px_debug') === '1';
+  } catch(e) {
+    showStatus('globalStatus', 'Laden fehlgeschlagen.', false);
+  }
+}
+
+// ----------------------------------------------------------------
+// Kanäle anzeigen
+// ----------------------------------------------------------------
+function renderChannels(channels) {
+  const list = document.getElementById('channelList');
+  if (channels.length === 0) {
+    list.innerHTML = '<p style="color:#555;font-size:0.85rem;">Keine Kanäle konfiguriert.</p>';
+    return;
+  }
+  list.innerHTML = channels.map((ch, i) =>
+    `<div class="channel-row" style="flex-direction:column;align-items:flex-start;">
+      <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+        <span class="channel-name">${escHtml(ch.name)}${i === 0 ? '<span class="channel-active">aktiv</span>' : ''}</span>
+        <div style="display:flex;">
+          <button class="btn-small" onclick="showPsk('${escHtml(ch.name)}')">Netzwerkschlüssel anzeigen</button>
+          <button class="btn-small" style="margin-left:6px;" onclick="deleteChannel('${escHtml(ch.name)}')">Löschen</button>
+        </div>
+      </div>
+      ${ch.nameLocked
+        ? '<div style="font-size:0.75rem;color:#666;margin-top:4px;">' +
+            'Absendername: <span style="color:#aaa;">' + escHtml(ch.senderName || '') + '</span>' +
+            ' <span style="color:#555;font-style:italic;">— vom Kanal-Ersteller festgelegt</span>' +
+          '</div>'
+        : (ch.senderName !== undefined
+          ? '<div style="margin-top:4px;display:flex;align-items:center;width:100%;">' +
+              '<input type="text" id="sname-' + escHtml(ch.name) + '" maxlength="20"' +
+              ' placeholder="Absendername (optional)"' +
+              ' value="' + escHtml(ch.senderName || '') + '"' +
+              ' style="flex:1;margin-bottom:0;font-size:0.8rem;padding:6px 8px;">' +
+              '<button class="btn-small" style="margin-left:6px;" onclick="saveChannelName(\'' + escHtml(ch.name) + '\')">Speichern</button>' +
+            '</div>'
+          : '')
+      }
+      <div id="psk-${escHtml(ch.name)}" style="display:none;width:100%;">
+        <div style="font-family:monospace;font-size:0.7rem;color:#aaa;word-break:break-all;
+                    background:#111;padding:8px;border-radius:4px;margin-top:4px;"
+             id="psk-text-${escHtml(ch.name)}"></div>
+        <button class="btn-small" style="margin-top:6px;"
+                onclick="copyPsk('${escHtml(ch.name)}')">Kopieren</button>
+      </div>
+    </div>`
+  ).join('');
+}
+
+async function showPsk(name) {
+  const box = document.getElementById('psk-' + name);
+  if (!box) { showStatus('globalStatus', 'Element nicht gefunden: psk-' + name, false); return; }
+  if (box.style.display !== 'none') { box.style.display = 'none'; return; }
+  if (!confirm('Der Netzwerkschlüssel gibt Zugang zu allen Nachrichten in diesem Kanal. Nur anzeigen wenn nötig.')) return;
+  try {
+    const r = await fetch('/config/get/psk?channel=' + encodeURIComponent(name), {
+      headers: {'X-Pin': String(currentPin)}
+    });
+    if (!r.ok) {
+      const txt = await r.text();
+      showStatus('globalStatus', 'Fehler ' + r.status + ': ' + txt, false);
+      return;
+    }
+    const data = await r.json();
+    const textEl = document.getElementById('psk-text-' + name);
+    if (!textEl) { showStatus('globalStatus', 'Text-Element nicht gefunden', false); return; }
+    textEl.textContent = data.psk;
+    box.style.display = 'block';
+  } catch(e) {
+    showStatus('globalStatus', 'Verbindungsfehler: ' + e.message, false);
+  }
+}
+
+function copyPsk(name) {
+  const text = document.getElementById('psk-text-' + name).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    showStatus('globalStatus', 'Netzwerkschlüssel kopiert.', true);
+  });
+}
+
+// ----------------------------------------------------------------
+// Kanal-Absendername speichern
+// ----------------------------------------------------------------
+async function saveChannelName(channel) {
+  var input = document.getElementById('sname-' + channel);
+  if (!input) return;
+  var senderName = input.value.trim();
+  var ok = await postConfig('/config/set/channelname', {channel: channel, senderName: senderName});
+  if (ok) loadConfig();
+}
+
+// ----------------------------------------------------------------
+// Gerätename speichern
+// ----------------------------------------------------------------
+async function saveName() {
+  const name = document.getElementById('deviceName').value.trim();
+  if (!name) { showStatus('globalStatus', 'Name darf nicht leer sein.', false); return; }
+  await postConfig('/config/set/name', {name});
+}
+
+// ----------------------------------------------------------------
+// Kanal erstellen
+// ----------------------------------------------------------------
+function channelNameError(name) {
+  if (!name) return 'Kanalname darf nicht leer sein.';
+  if (name.length > 10) return 'Kanalname darf höchstens 10 Zeichen lang sein.';
+  if (!/^[a-zA-Z0-9_\-äöüÄÖÜß ]+$/.test(name)) return 'Kanalname enthält ungültige Zeichen.';
+  return null;
+}
+
+async function createChannel() {
+  const name = document.getElementById('newChannelName').value.trim();
+  const err = channelNameError(name);
+  if (err) { showStatus('globalStatus', err, false); return; }
+  const ok = await postConfig('/config/set/channel', {name});
+  if (ok) {
+    document.getElementById('newChannelName').value = '';
+    loadConfig();
+  }
+}
+
+// ----------------------------------------------------------------
+// Kanal manuell hinzufügen
+// ----------------------------------------------------------------
+async function importChannel() {
+  const name = document.getElementById('importChannelName').value.trim();
+  const psk  = document.getElementById('importPsk').value.trim().toUpperCase();
+  const err = channelNameError(name);
+  if (err) { showStatus('globalStatus', err, false); return; }
+  if (psk.length !== 64 || !/^[0-9A-F]+$/.test(psk)) {
+    showStatus('globalStatus', 'Netzwerkschlüssel muss genau 64 Zeichen sein.', false); return;
+  }
+  const ok = await postConfig('/config/set/psk', {name, psk});
+  if (ok) {
+    document.getElementById('importChannelName').value = '';
+    document.getElementById('importPsk').value = '';
+    loadConfig();
+  }
+}
+
+// ----------------------------------------------------------------
+// Kanal löschen
+// ----------------------------------------------------------------
+async function deleteChannel(name) {
+  if (!confirm(`Kanal "${name}" wirklich löschen?`)) return;
+  const ok = await postConfig('/config/delete/channel', {name});
+  if (ok) loadConfig();
+}
+
+// ----------------------------------------------------------------
+// Funk-Profil speichern
+// ----------------------------------------------------------------
+async function savePreset() {
+  const preset = parseInt(document.getElementById('presetSelect').value);
+  await postConfig('/config/set/preset', {preset});
+}
+
+// ----------------------------------------------------------------
+// PIN ändern
+// ----------------------------------------------------------------
+async function changePin() {
+  const p1 = document.getElementById('newPin').value.trim();
+  const p2 = document.getElementById('newPinRepeat').value.trim();
+  if (p1.length !== 6 || !/^\d+$/.test(p1)) {
+    showStatus('globalStatus', 'PIN muss genau 6 Ziffern sein.', false); return;
+  }
+  if (p1 !== p2) {
+    showStatus('globalStatus', 'PINs stimmen nicht überein.', false); return;
+  }
+  const ok = await postConfig('/config/set/pin', {pin: p1});
+  if (ok) currentPin = p1;
+}
+
+async function changeWifiPass() {
+  const p1 = document.getElementById('wifiPassNew').value;
+  const p2 = document.getElementById('wifiPassRepeat').value;
+  const st = document.getElementById('wifipassStatus');
+  st.className = 'status';
+  st.textContent = '';
+  if (!p1) { st.className='status err'; st.textContent='Bitte Passwort eingeben'; return; }
+  if (p1 !== p2) { st.className='status err'; st.textContent='Passwörter stimmen nicht überein'; return; }
+  try {
+    const r = await fetch('/config/set/wifipass', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'X-Pin': currentPin},
+      body: JSON.stringify({password: p1})
+    });
+    if (r.ok) {
+      st.className = 'status ok';
+      st.textContent = 'Passwort gespeichert. WLAN trennt sich jetzt.';
+    } else {
+      const j = await r.json().catch(function(){return {};});
+      st.className = 'status err';
+      st.textContent = j.error || ('Fehler ' + r.status);
+    }
+  } catch(e) {
+    st.className = 'status err';
+    st.textContent = 'Verbindungsfehler.';
+  }
+}
+
+// ----------------------------------------------------------------
+// Hilfsfunktionen
+// ----------------------------------------------------------------
+async function postConfig(url, body) {
+  try {
+    const r = await fetch(url, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'X-Pin': currentPin},
+      body: JSON.stringify(body)
+    });
+    if (r.ok) {
+      showStatus('globalStatus', 'Gespeichert.', true);
+      return true;
+    } else {
+      const text = await r.text();
+      showStatus('globalStatus', 'Fehler: ' + text, false);
+      return false;
+    }
+  } catch(e) {
+    showStatus('globalStatus', 'Verbindungsfehler.', false);
+    return false;
+  }
+}
+
+function showStatus(id, msg, ok) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.className = 'status ' + (ok ? 'ok' : 'err');
+  setTimeout(() => { el.className = 'status'; }, 3000);
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// Enter-Taste bei PIN
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('pinInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') checkPin();
+  });
+  var params = new URLSearchParams(location.search);
+  var autoPin = params.get('pin');
+  if (autoPin && /^\d{6}$/.test(autoPin)) {
+    fetch('/debug/check').then(function(r){
+      if (!r.ok) return;
+      document.getElementById('pinInput').value = autoPin;
+      setTimeout(function(){
+        checkPin();
+        if (params.get('view') === 'pairing') {
+          setTimeout(function(){
+            var cards = document.querySelectorAll('#configScreen > .card');
+            cards.forEach(function(c){ if (!c.querySelector('#pairingIdle')) c.style.display='none'; });
+          }, 2000);
+        }
+      }, 300);
+    }).catch(function(){});
+  }
+  document.addEventListener('click', e => {
+    if (ddOpen) {
+      var dd = document.getElementById('channel-dropdown');
+      var btn = document.getElementById('btn-channels');
+      if (!dd.contains(e.target) && !btn.contains(e.target)) {
+        ddOpen = false; renderDD(); updateArrow();
+      }
+    }
+  });
+  initNav();
+});
+
+let ddOpen = false;
+let navChannels = [];
+
+async function initNav() {
+  try {
+    var res = await fetch('/channels');
+    if (!res.ok) return;
+    var data = await res.json();
+    navChannels = data.channels || [];
+  } catch(e) {}
+  updateArrow();
+}
+
+function updateArrow() {
+  var arrow = ddOpen ? ' ▲' : ' ▼';
+  document.getElementById('btn-ch-text').innerHTML = '≡ Kanäle' + arrow;
+}
+
+function toggleDD() {
+  ddOpen = !ddOpen;
+  renderDD();
+  updateArrow();
+}
+
+// ----------------------------------------------------------------
+// Kanal übertragen
+// ----------------------------------------------------------------
+let pairingPoll = null;
+let lastPairingState = '';
+let pairingReachedDone = false;
+
+async function checkActivePairing() {
+  try {
+    const r = await fetch('/pairing/status', {headers:{'X-Pin':currentPin}});
+    if (!r.ok) return;
+    const s = await r.json();
+    if (!s.state || s.state === 'IDLE') return;
+    if (s.state === 'GIVER_DONE' || s.state === 'RECEIVER_DONE' || s.state === 'ERROR') {
+      fetch('/pairing/abort', {method:'POST', headers:{'X-Pin':currentPin}}).catch(function(){});
+      return;
+    }
+    beginPairingPoll();
+  } catch(e) {}
+}
+
+async function startPairingGive() {
+  const ch = document.getElementById('pairingChannel').value;
+  if (!ch) { showStatus('globalStatus', 'Kein Kanal ausgewählt.', false); return; }
+  const lockName = document.getElementById('pairingLockName').checked;
+  const ok = await postConfig('/pairing/start/give', {channel: ch, lockName: lockName});
+  if (ok) beginPairingPoll();
+}
+
+async function startPairingReceive() {
+  const ok = await postConfig('/pairing/start/receive', {});
+  if (ok) beginPairingPoll();
+}
+
+function beginPairingPoll() {
+  lastPairingState = '';
+  pairingReachedDone = false;
+  document.getElementById('pairingIdle').classList.add('hidden');
+  document.getElementById('pairingActive').classList.remove('hidden');
+  document.getElementById('pairingDone').classList.add('hidden');
+  document.getElementById('pairingErrorDiv').classList.add('hidden');
+  if (pairingPoll) clearInterval(pairingPoll);
+  pairingPoll = setInterval(pollPairing, 1000);
+  pollPairing();
+}
+
+async function pollPairing() {
+  try {
+    const r = await fetch('/pairing/status', {headers:{'X-Pin':currentPin}});
+    if (!r.ok) return;
+    const s = await r.json();
+    updatePairingUI(s);
+  } catch(e) {}
+}
+
+function updatePairingUI(s) {
+  if (pairingReachedDone) return;
+  if (s.state === 'GIVER_DONE' || s.state === 'RECEIVER_DONE') pairingReachedDone = true;
+
+  if (s.state === lastPairingState) {
+    var timerEl = document.getElementById('pairingTimer');
+    if (s.remainingMs > 0) timerEl.textContent = Math.ceil(s.remainingMs / 1000) + 's verbleibend';
+    else timerEl.textContent = '';
+    return;
+  }
+  lastPairingState = s.state;
+
+  const labels = {
+    'GIVER_WAIT_RESP': 'Warte auf Empfänger...',
+    'GIVER_PIN_CONFIRM': 'PIN vergleichen — stimmt die PIN auf beiden Geräten überein?',
+    'GIVER_WAIT_ACK': 'Netzwerkschlüssel wird übertragen...',
+    'GIVER_NAME_INPUT': 'Gerätename für das neue Gerät eingeben:',
+    'GIVER_WAIT_NAME_ACK': 'Name gesendet — warte auf Bestätigung...',
+    'RECEIVER_WAIT_INIT': 'Warte auf Sender...',
+    'RECEIVER_PIN_DISPLAY': 'PIN vergleichen — Bestätigung erfolgt am sendenden Gerät.',
+    'RECEIVER_WAIT_NAME': 'Kanal empfangen! Warte auf Gerätenamen...',
+    'RECEIVER_CHANNEL_RENAME': 'Kanal existiert bereits — bitte neuen Namen wählen:'
+  };
+  document.getElementById('pairingStateText').textContent = labels[s.state] || s.state;
+
+  var pinEl = document.getElementById('pairingPin');
+  if (s.pin) { pinEl.textContent = s.pin; pinEl.classList.remove('hidden'); }
+  else { pinEl.classList.add('hidden'); }
+
+  var timerEl2 = document.getElementById('pairingTimer');
+  if (s.remainingMs > 0) timerEl2.textContent = Math.ceil(s.remainingMs / 1000) + 's verbleibend';
+  else timerEl2.textContent = '';
+
+  var act = document.getElementById('pairingActions');
+  act.innerHTML = '';
+  if (s.state === 'GIVER_PIN_CONFIRM') {
+    act.innerHTML = '<button class="btn btn-primary" onclick="confirmPairing()">PIN stimmt überein</button>';
+  } else if (s.state === 'GIVER_NAME_INPUT') {
+    act.innerHTML = '<label>Gerätename</label>' +
+      '<input type="text" id="pairingNameInput" maxlength="20" placeholder="z.B. Oma_Outdoor">' +
+      '<button class="btn btn-primary" onclick="sendPairingName()">Name senden</button>';
+  } else if (s.state === 'RECEIVER_CHANNEL_RENAME') {
+    act.innerHTML = '<input type="text" id="pairingRenameInput" maxlength="10" placeholder="Kanalname">' +
+      '<button class="btn btn-primary" onclick="sendPairingRename()" style="margin-top:8px;">Umbenennen</button>' +
+      '<button class="btn btn-secondary" onclick="sendPairingRename(true)" style="margin-top:8px;">Automatisch benennen</button>';
+  }
+
+  if (s.state === 'GIVER_DONE' || s.state === 'RECEIVER_DONE') {
+    clearInterval(pairingPoll); pairingPoll = null;
+    document.getElementById('pairingActive').classList.add('hidden');
+    document.getElementById('pairingDone').classList.remove('hidden');
+    var txt = s.state === 'GIVER_DONE'
+      ? 'Kanal "' + (s.channel||'') + '" erfolgreich übertragen.'
+      : 'Kanal empfangen: "' + (s.channel||'') + '"' + (s.peerName ? ' — Name: ' + s.peerName : '');
+    document.getElementById('pairingDoneText').textContent = txt;
+    loadConfig();
+  } else if (s.state === 'ERROR') {
+    clearInterval(pairingPoll); pairingPoll = null;
+    document.getElementById('pairingActive').classList.add('hidden');
+    document.getElementById('pairingErrorDiv').classList.remove('hidden');
+    document.getElementById('pairingErrorText').textContent = s.error || 'Unbekannter Fehler';
+  }
+}
+
+async function confirmPairing() {
+  await postConfig('/pairing/confirm', {});
+}
+
+async function sendPairingName() {
+  const name = document.getElementById('pairingNameInput').value.trim();
+  if (!name) return;
+  await postConfig('/pairing/setname', {name});
+}
+
+async function sendPairingRename(auto) {
+  var name = auto ? '' : (document.getElementById('pairingRenameInput') ? document.getElementById('pairingRenameInput').value.trim() : '');
+  await postConfig('/pairing/renamechannel', {name: name});
+}
+
+async function abortPairing() {
+  clearInterval(pairingPoll);
+  await postConfig('/pairing/abort', {});
+  resetPairingUI();
+}
+
+function resetPairingUI() {
+  clearInterval(pairingPoll); pairingPoll = null;
+  lastPairingState = '';
+  pairingReachedDone = false;
+  fetch('/pairing/abort', {method:'POST', headers:{'X-Pin':currentPin}}).catch(function(){});
+  document.getElementById('pairingActive').classList.add('hidden');
+  document.getElementById('pairingDone').classList.add('hidden');
+  document.getElementById('pairingErrorDiv').classList.add('hidden');
+  document.getElementById('pairingIdle').classList.remove('hidden');
+}
+
+function renderDD() {
+  var dd = document.getElementById('channel-dropdown');
+  if (!ddOpen) { dd.style.display = 'none'; return; }
+  dd.style.display = 'block';
+  dd.innerHTML = '';
+  var active = localStorage.getItem('px_active') || '';
+  for (var i = 0; i < navChannels.length; i++) {
+    (function(name) {
+      var div = document.createElement('div');
+      div.className = 'ch-item' + (name === active ? ' active' : '');
+      div.textContent = (name === active ? '● ' : '  ') + name;
+      div.onclick = function() {
+        localStorage.setItem('px_active', name);
+        ddOpen = false;
+        renderDD();
+        updateArrow();
+        location.href = '/';
+      };
+      dd.appendChild(div);
+    })(navChannels[i]);
+  }
+}
+</script>
+</body>
+</html>
