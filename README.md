@@ -160,6 +160,8 @@ Frei verwendbar, auch kommerziell. Namensnennung erforderlich:
 **Firmware (ProjektX)** — [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0)
 Frei verwendbar, auch kommerziell. Namensnennung erforderlich. Enthält expliziten Patentschutz.
 
+Abhängigkeiten: siehe [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md)
+
 ---
 
 © 2026 Danny Sonntag
