@@ -203,7 +203,7 @@ unsigned long loraDutyCycleRemainingMs() {
 }
 
 // ──────────────────────────────────────────────────────────────
-int loraReceive(uint8_t *buf, size_t maxLen) {
+int loraReceive(uint8_t *buf, size_t maxLen, uint32_t timeoutMs) {
 #ifdef HARDWARE_ESP32_SX1276
     // Timeout muss bei hohen Spreading Factors deutlich länger sein —
     // bei SF12 dauert ein Symbol 32ms statt 4ms bei SF9. Ein zu kurzer
@@ -211,18 +211,26 @@ int loraReceive(uint8_t *buf, size_t maxLen) {
     // und das Paket wird verpasst.
     // Grobe Faustregel: Timeout >= max. Airtime eines 255-Byte-Pakets.
     //   SF7:  ~500ms   SF9: ~1.500ms   SF12: ~6.000ms
-    uint32_t timeoutMs;
-    switch (PRESETS[currentPreset].sf) {
-        case 12: timeoutMs = 6000; break;
-        case 11: timeoutMs = 4000; break;
-        case 10: timeoutMs = 2500; break;
-        case 9:  timeoutMs = 1500; break;
-        default: timeoutMs = 1000; break; // SF7/SF8
+    if (timeoutMs == 0) {
+        switch (PRESETS[currentPreset].sf) {
+            case 12: timeoutMs = 6000; break;
+            case 11: timeoutMs = 4000; break;
+            case 10: timeoutMs = 2500; break;
+            case 9:  timeoutMs = 1500; break;
+            default: timeoutMs = 1000; break; // SF7/SF8
+        }
     }
     int state = radio.receive(buf, maxLen, timeoutMs);
 #endif
 #ifdef HARDWARE_HELTEC_V3
-    int state = radio.receive(buf, maxLen);
+    // timeoutMs=0: RadioLib berechnet Timeout automatisch (500% der Airtime
+    // bei 255B/SF9 ≈ 7500ms). Für Polling-Loops expliziten Timeout übergeben.
+    int state;
+    if (timeoutMs == 0) {
+        state = radio.receive(buf, maxLen);
+    } else {
+        state = radio.receive(buf, maxLen, (RadioLibTime_t)timeoutMs);
+    }
 #endif
 
     if (state == RADIOLIB_ERR_NONE) {

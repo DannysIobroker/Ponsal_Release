@@ -283,6 +283,15 @@
     <label>PIN wiederholen</label>
     <input type="password" inputmode="numeric" maxlength="6" id="newPinRepeat" placeholder="——————">
     <button class="btn btn-secondary" onclick="changePin()">PIN ändern</button>
+    <div style="margin-top:14px;border-top:1px solid #333;padding-top:12px;">
+      <label style="display:flex;align-items:center;cursor:pointer;margin-bottom:0;">
+        <input type="checkbox" id="showSettingsPinToggle" style="width:auto;margin:0 10px 0 0;" onchange="onShowSettingsPinToggle()">
+        Einstellungs-PIN beim Start auf Display anzeigen
+      </label>
+      <p style="color:#555;font-size:0.75rem;margin-top:6px;margin-bottom:0;">
+        Wirkt erst nach dem nächsten Neustart.
+      </p>
+    </div>
   </div>
 
   <!-- 6. WLAN-Passwort -->
@@ -298,6 +307,15 @@
       &#9888; Nach dem Speichern verlierst du die WLAN-Verbindung.<br>
       Verbinde dich erneut mit dem neuen Passwort.
     </p>
+    <div style="margin-top:14px;border-top:1px solid #333;padding-top:12px;">
+      <label style="display:flex;align-items:center;cursor:pointer;margin-bottom:0;">
+        <input type="checkbox" id="showWifiPwToggle" style="width:auto;margin:0 10px 0 0;" onchange="onShowWifiPwToggle()">
+        WLAN-Passwort beim Start auf Display anzeigen
+      </label>
+      <p style="color:#555;font-size:0.75rem;margin-top:6px;margin-bottom:0;">
+        Wirkt erst nach dem nächsten Neustart.
+      </p>
+    </div>
   </div>
 
   <!-- 7. Reichweite testen -->
@@ -339,6 +357,19 @@ let currentPin = '';
 function onDebugToggle() {
   const checked = document.getElementById('debugToggle').checked;
   localStorage.setItem('px_debug', checked ? '1' : '0');
+}
+
+// ----------------------------------------------------------------
+// Display-Anzeigetoggles (WLAN-Passwort, Einstellungs-PIN)
+// ----------------------------------------------------------------
+async function onShowWifiPwToggle() {
+  const show = document.getElementById('showWifiPwToggle').checked;
+  await postConfig('/config/set/displaytoggle', {field: 'wifi_pw', show});
+}
+
+async function onShowSettingsPinToggle() {
+  const show = document.getElementById('showSettingsPinToggle').checked;
+  await postConfig('/config/set/displaytoggle', {field: 'settings_pin', show});
 }
 
 // ----------------------------------------------------------------
@@ -415,6 +446,8 @@ async function loadConfig() {
     document.getElementById('deviceName').value = data.name || '';
     document.getElementById('presetSelect').value = (data.preset != null ? data.preset : 0);
     document.getElementById('autoReplyToggle').checked = data.autoReply || false;
+    document.getElementById('showWifiPwToggle').checked      = data.showWifiPw      !== false;
+    document.getElementById('showSettingsPinToggle').checked = data.showSettingsPin !== false;
     onPresetChange();
     renderChannels(data.channels || []);
 

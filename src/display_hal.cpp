@@ -16,7 +16,7 @@ static DisplayState   currentState  = DISP_STATE_BOOT;
 static bool           overrideActive = false;
 static unsigned long  bootStart     = 0;
 static unsigned long  lastChange    = 0;  // letzter Screen-Wechsel im Boot
-static bool           bootScreenA   = true;
+static uint8_t        bootScreen    = 0;  // 0=WLAN, 1=PIN, 2=IP
 static unsigned long  lastUpdate    = 0;  // letzter vollständiger Redraw
 
 // ── Akku (alle 10s neu gelesen, gecacht) ──────────────────────
@@ -61,9 +61,9 @@ void displaySetState(DisplayState state) {
     currentState = state;
     lastUpdate   = 0;  // sofortiger Redraw beim nächsten Tick
     if (state == DISP_STATE_BOOT) {
-        bootStart   = millis();
-        lastChange  = 0;  // 0 = noch kein erster Draw
-        bootScreenA = true;
+        bootStart  = millis();
+        lastChange = 0;  // 0 = noch kein erster Draw
+        bootScreen = 0;  // Start mit Screen 0 (WLAN)
     }
     logPrintf("[Display] State → %d\n", (int)state);
 }
@@ -174,31 +174,42 @@ void displayTick(const DisplayContext &ctx) {
             return;
 
         case DISP_STATE_BOOT: {
-            // Nach 30s in Dauerbetrieb wechseln
-            if (now - bootStart >= 30000) {
+            // Nach 60s in Dauerbetrieb wechseln (3 Screens × 5s × 4 Wiederholungen)
+            if (now - bootStart >= 60000) {
                 currentState = ctx.pskLoaded ? DISP_STATE_NORMAL : DISP_STATE_NO_CHANNEL;
                 logPrintf("[Display] Boot → %s\n", ctx.pskLoaded ? "NORMAL" : "NO_CHANNEL");
                 lastUpdate = 0;
-                displayTick(ctx);  // sofort neu zeichnen
+                displayTick(ctx);
                 return;
             }
-            // Erster Draw: Screen A zeigen, lastChange setzen
-            if (lastChange == 0) {
-                bootScreenA = true;
-                lastChange  = now;
-                displayStatus(ctx.ssid, ctx.wifiPass, "projektx.local");
-                lastUpdate = now;
-                return;
-            }
-            // Alle 3s wechseln
-            if (now - lastChange >= 3000) {
-                bootScreenA = !bootScreenA;
-                lastChange  = now;
-                if (bootScreenA) {
-                    displayStatus(ctx.ssid, ctx.wifiPass, "projektx.local");
+            // Erster Draw oder alle 5s wechseln
+            bool firstDraw = (lastChange == 0);
+            if (firstDraw || now - lastChange >= 5000) {
+                if (!firstDraw) bootScreen = (bootScreen + 1) % 3;
+                lastChange = now;
+
+                char line3[20];
+                if (bootScreen == 0) {
+                    // Screen 1: WLAN-Zugang
+                    if (ctx.showWifiPw) {
+                        snprintf(line3, sizeof(line3), "PW:%s", ctx.wifiPass);
+                        displayStatus("WLAN verbinden:", ctx.ssid, line3, "");
+                    } else {
+                        displayStatus("WLAN-Passwort", "ausgeblendet", "siehe", "config.html");
+                    }
+                } else if (bootScreen == 1) {
+                    // Screen 2: Einstellungs-PIN
+                    if (ctx.showSettingsPin) {
+                        snprintf(line3, sizeof(line3), "%06u", (unsigned)ctx.settingsPin);
+                        displayStatus("Einstellungs-", "PIN:", line3, "");
+                    } else {
+                        displayStatus("Einstellungs-", "PIN", "ausgeblendet", "siehe Notiz");
+                    }
                 } else {
-                    displayStatus("Verbinden:", "192.168.4.1", "");
+                    // Screen 3: IP-Adresse (kein Toggle)
+                    displayStatus("Browser oeffnen:", "192.168.4.1", "", "");
                 }
+                lastUpdate = now;
             }
             return;
         }

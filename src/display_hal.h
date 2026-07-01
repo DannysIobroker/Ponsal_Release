@@ -10,7 +10,7 @@
 
 // ── Zustandsmaschine ─────────────────────────────────────────
 enum DisplayState {
-    DISP_STATE_BOOT = 0,   // Boot-Sequenz (30s, A/B-Wechsel)
+    DISP_STATE_BOOT = 0,   // Boot-Sequenz (60s, 3 Screens à 5s, 4× Wiederholung)
     DISP_STATE_NO_CHANNEL, // Kein Kanal konfiguriert
     DISP_STATE_NORMAL,     // Normalbetrieb
     DISP_STATE_ERROR_LORA, // LoRa-Init fehlgeschlagen (dauerhaft)
@@ -25,6 +25,10 @@ struct DisplayContext {
     bool          pskLoaded;
     uint32_t      unreadMessages;
     unsigned long dutyCycleMs;
+    // Boot-Sequenz: PIN-Wert und Anzeigetoggles (aus NVS geladen, RAM-gecacht)
+    uint32_t      settingsPin;
+    bool          showWifiPw;      // false → Platzhaltertext auf Screen 1
+    bool          showSettingsPin; // false → Platzhaltertext auf Screen 2
 };
 
 // ── API ───────────────────────────────────────────────────────

@@ -45,7 +45,9 @@ unsigned long loraLastAirtimeMs();
 unsigned long loraDutyCycleRemainingMs();
 
 // ── Empfangen ───────────────────────────────────────────────────
-int   loraReceive(uint8_t *buf, size_t maxLen);
+// timeoutMs=0: SF-abhängiger Standard (SF9=1500ms, SX1262 auto)
+// timeoutMs>0: explizit kurzer Timeout für Polling-Loops
+int   loraReceive(uint8_t *buf, size_t maxLen, uint32_t timeoutMs = 0);
 
 // RSSI des zuletzt empfangenen Pakets
 float loraRSSI();

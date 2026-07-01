@@ -21,7 +21,6 @@
 #include "config_routes.h"
 #include "pairing.h"
 
-#define WIFI_PASS_DEFAULT  "changeme"
 
 AsyncWebServer server(80);
 
@@ -35,11 +34,13 @@ char     activeChannel[CHANNEL_NAME_MAX + 1] = {0};
 uint8_t  nodeId[2];
 volatile uint16_t seqNum = 0;
 char     wifiSSID[32];
-char     wifiPass[64] = "changeme";
+char     wifiPass[64] = "";
 char     deviceName[21] = "Unbekannt";
 uint8_t  loraPreset    = 0;
 uint32_t settingsPin   = 0;
 bool     autoReplyEnabled = false;
+uint8_t  showWifiPw       = 1;  // Display-Toggle WLAN-Passwort (NVS show_wifi_pw, Default an)
+uint8_t  showSettingsPin  = 1;  // Display-Toggle Einstellungs-PIN (NVS show_pin, Default an)
 
 // Zeitreferenz
 uint32_t      timeRefUnixSec  = 0;
@@ -76,8 +77,6 @@ int sendQueueCount = 0;
 void addMessage(const char *sender, const char *text, bool isOwn, float rssi, int snr, unsigned long airtimeMs, uint32_t timestamp, const char *channel);
 int buildPacket(const char *sender, const char *text, uint32_t timestamp, const uint8_t *usePsk, const uint8_t *useNetId, uint8_t *outBuf);
 void webTask(void *pvParameters);
-uint32_t pinFromMac();
-void wifiPassFromMac(char *pass, size_t maxLen);
 void factoryReset();
 void reloadChannelPsks();
 
@@ -154,26 +153,7 @@ bool enqueueSend(const uint8_t *data, size_t len, QueueEntryType type) {
 }
 
 // ----------------------------------------------------------------
-// PIN aus MAC berechnen
-// ----------------------------------------------------------------
-uint32_t pinFromMac() {
-    uint8_t mac[6];
-    esp_read_mac(mac, ESP_MAC_WIFI_STA);
-    uint32_t raw = ((uint32_t)mac[3] << 16) | ((uint32_t)mac[4] << 8) | mac[5];
-    return raw % 1000000;
-}
-
-// ----------------------------------------------------------------
-// WLAN-Passwort aus MAC berechnen
-// ----------------------------------------------------------------
-void wifiPassFromMac(char *pass, size_t maxLen) {
-    uint8_t mac[6];
-    esp_read_mac(mac, ESP_MAC_WIFI_STA);
-    snprintf(pass, maxLen, "ponsal%02x%02x%02x", mac[3], mac[4], mac[5]);
-}
-
-// ----------------------------------------------------------------
-// Werksreset — alles löschen, PIN + WLAN auf MAC-Werte
+// Werksreset — alles löschen, PIN und WLAN-Passwort neu zufällig generieren
 // ----------------------------------------------------------------
 void factoryReset() {
     logPrintf("[Reset] Werksreset gestartet\n");
@@ -183,23 +163,21 @@ void factoryReset() {
     storageClearMessages();
     storageClearSeqSlots();
 
-    uint32_t newPin = pinFromMac();
-    storageStoreSettingsPin(newPin);
+    // PIN: echte Zufallsgenerierung (nicht mehr aus MAC ableitbar, Spec 2026-06-30)
+    uint32_t newPin = 0;
+    storageGenerateAndStoreSettingsPin(&newPin);
 
+    // WLAN-Passwort: echtes Zufallspasswort (Spec 2026-06-24)
     char newPass[21];
-    wifiPassFromMac(newPass, sizeof(newPass));
-    storageStoreWifiPass(newPass);
+    storageGenerateAndStoreWifiPass(newPass, sizeof(newPass));
 
-    logPrintf("[Reset] Neue PIN: %06lu\n", newPin);
-    logPrintf("[Reset] Neues WLAN-Passwort: %s\n", newPass);
+    // Anzeigetoggles auf Default zurücksetzen (Spec 2026-06-30)
+    storageStoreShowWifiPw(1);
+    storageStoreShowPin(1);
 
-    char pinLine[32];
-    snprintf(pinLine, sizeof(pinLine), "PIN: %06lu", newPin);
-    char passLine[32];
-    snprintf(passLine, sizeof(passLine), "PW: %s", newPass);
-    displayStatus("Reset OK", pinLine, passLine);
-
-    delay(2000);
+    // Keine direkte Anzeige der neuen Werte — reguläre Boot-Sequenz
+    // nach dem automatischen Neustart zeigt PIN und WLAN-Passwort.
+    logPrintf("[Reset] Abgeschlossen — Neustart\n");
     ESP.restart();
 }
 
@@ -350,15 +328,24 @@ void setup() {
     }
 
     if (!storageLoadSettingsPin(&settingsPin)) {
-        settingsPin = pinFromMac();
-        logPrintf("[Config] PIN (ab Werk, aus MAC): %06lu\n", settingsPin);
+        // Erster Boot ohne NVS-Eintrag → echte Zufalls-PIN generieren und persistieren
+        storageGenerateAndStoreSettingsPin(&settingsPin);
+        logPrintf("[Config] PIN (Erstboot, zufällig): %06lu\n", settingsPin);
     } else {
         logPrintf("[Config] PIN aus NVS geladen\n");
     }
     logPrintf("[Config] Einstellungs-PIN: %06lu\n", settingsPin);
 
+    // Display-Anzeigetoggles laden (Default 1 wenn nicht vorhanden)
+    if (!storageLoadShowWifiPw(&showWifiPw))   showWifiPw      = 1;
+    if (!storageLoadShowPin(&showSettingsPin)) showSettingsPin = 1;
+    logPrintf("[Config] Display-Toggle WLAN-PW=%d PIN=%d\n", showWifiPw, showSettingsPin);
+
     if (!storageLoadWifiPass(wifiPass, sizeof(wifiPass))) {
-        logPrintf("[Config] WLAN-Passwort: Standard (changeme)\n");
+        // Kein NVS-Eintrag (erster Boot) oder Lesefehler — zufällig generieren
+        // und sofort persistieren. Kein statischer Fallback.
+        storageGenerateAndStoreWifiPass(wifiPass, sizeof(wifiPass));
+        logPrintf("[Config] WLAN-Passwort: neu generiert: %s\n", wifiPass);
     } else {
         logPrintf("[Config] WLAN-Passwort aus NVS geladen\n");
     }
@@ -544,9 +531,6 @@ void loop() {
         // Early-Return die Queue nie erreichte. QUEUE_PAIRING-Pakete müssen
         // auch im unkonfigurierten Zustand gesendet werden können.
         pairingTick();
-#ifdef BUTTON_PIN
-        handleButtonTick();
-#endif
         if (loraDutyCycleRemainingMs() == 0 && sendQueueCount > 0) {
             SendQueueEntry &front = sendQueue[0];
             LoraSendResult qr = loraSend(front.data, front.len);
@@ -558,8 +542,30 @@ void loop() {
                 logPrintf("[MeshQ] PAIRING senden fehlgeschlagen: %d\n", qr);
             }
         }
+        // Polling-Loop: 10 × 150ms statt einmal 1500ms/7500ms blockieren.
+        // Button und Display werden so alle 150ms aktualisiert — Pairing-Hinweis
+        // erscheint innerhalb von 3,15s statt erst nach 10s (SX1262-Default).
         uint8_t bufNoPsk[PACKET_MAX];
-        int resNoPsk = loraReceive(bufNoPsk, PACKET_MAX);
+        int resNoPsk = -1;
+        for (int _s = 0; _s < 10 && resNoPsk <= 0; _s++) {
+#ifdef BUTTON_PIN
+            handleButtonTick();
+#endif
+            {
+                DisplayContext dctx;
+                dctx.ssid            = wifiSSID;
+                dctx.wifiPass        = wifiPass;
+                dctx.activeChannel   = activeChannel;
+                dctx.pskLoaded       = pskLoaded;
+                dctx.unreadMessages  = 0;
+                dctx.dutyCycleMs     = 0;
+                dctx.settingsPin     = settingsPin;
+                dctx.showWifiPw      = showWifiPw != 0;
+                dctx.showSettingsPin = showSettingsPin != 0;
+                displayTick(dctx);
+            }
+            resNoPsk = loraReceive(bufNoPsk, PACKET_MAX, 150);
+        }
         if (resNoPsk > 0) {
             logPrintf("[LoRa] Paket empfangen (kein PSK), Länge: %d, RSSI: %.0f\n",
                 resNoPsk, loraRSSI());
@@ -567,7 +573,6 @@ void loop() {
                 pairingHandlePacket(bufNoPsk, resNoPsk);
             }
         }
-        delay(10);
         return;
     }
 
@@ -672,12 +677,15 @@ void loop() {
     // ── Display Tick ─────────────────────────────────────────────
     {
         DisplayContext dctx;
-        dctx.ssid           = wifiSSID;
-        dctx.wifiPass       = wifiPass;
-        dctx.activeChannel  = activeChannel;
-        dctx.pskLoaded      = pskLoaded;
-        dctx.unreadMessages = unreadMessages;
-        dctx.dutyCycleMs    = loraDutyCycleRemainingMs();
+        dctx.ssid            = wifiSSID;
+        dctx.wifiPass        = wifiPass;
+        dctx.activeChannel   = activeChannel;
+        dctx.pskLoaded       = pskLoaded;
+        dctx.unreadMessages  = unreadMessages;
+        dctx.dutyCycleMs     = loraDutyCycleRemainingMs();
+        dctx.settingsPin     = settingsPin;
+        dctx.showWifiPw      = showWifiPw != 0;
+        dctx.showSettingsPin = showSettingsPin != 0;
         displayTick(dctx);
     }
 }

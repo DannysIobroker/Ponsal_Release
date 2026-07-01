@@ -5,12 +5,14 @@
 #include <nvs.h>
 #include <string.h>
 
-#define NVS_NAMESPACE    "projektx"
-#define NVS_KEY_NAME     "device_name"
-#define NVS_KEY_PIN      "settings_pin"
-#define NVS_KEY_WIFIPASS "wifi_pass"
-#define NVS_KEY_PRESET   "lora_preset"
-#define NVS_KEY_CHANNELS "channel_list"
+#define NVS_NAMESPACE       "projektx"
+#define NVS_KEY_NAME        "device_name"
+#define NVS_KEY_PIN         "settings_pin"
+#define NVS_KEY_WIFIPASS    "wifi_pass"
+#define NVS_KEY_PRESET      "lora_preset"
+#define NVS_KEY_CHANNELS    "channel_list"
+#define NVS_KEY_SHOW_WIFI   "show_wifi_pw"   // 12 Zeichen — innerhalb NVS-Limit 15
+#define NVS_KEY_SHOW_PIN    "show_pin"        //  8 Zeichen
 
 #define NVS_MSG_PARTITION "msgstore"
 #define NVS_MSG_NAMESPACE "msgs"
@@ -426,6 +428,79 @@ bool storageLoadWifiPass(char *pass, size_t maxLen) {
         return false;
     }
     return true;
+}
+
+// Zeichensatz: Großbuchstaben + Ziffern ohne 0/1/I/O (leicht verwechselbar).
+// 32 Zeichen = Potenz von 2 → kein Modulo-Bias bei esp_random() % 32.
+// 12 Zeichen × 5 Bit Entropie = 60 Bit — nicht aus MAC ableitbar.
+static const char WIFIPASS_CHARSET[] = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+#define WIFIPASS_LEN 12
+
+bool storageGenerateAndStoreWifiPass(char *pass, size_t maxLen) {
+    if (maxLen < WIFIPASS_LEN + 1) return false;
+    for (int i = 0; i < WIFIPASS_LEN; i++) {
+        pass[i] = WIFIPASS_CHARSET[esp_random() % 32];
+    }
+    pass[WIFIPASS_LEN] = '\0';
+    bool ok = storageStoreWifiPass(pass);
+    if (!ok) {
+        // NVS-Schreiben fehlgeschlagen: Passwort trotzdem im RAM aktiv —
+        // nach Neustart wird erneut generiert. Kein statischer Fallback.
+        logPrintf("[Storage] WLAN-Passwort konnte nicht persistiert werden\n");
+    }
+    return ok;
+}
+
+bool storageGenerateAndStoreSettingsPin(uint32_t *pin) {
+    *pin = esp_random() % 1000000;
+    bool ok = storageStoreSettingsPin(*pin);
+    if (!ok) {
+        logPrintf("[Storage] Einstellungs-PIN konnte nicht persistiert werden\n");
+    }
+    logPrintf("[Storage] Neue Einstellungs-PIN generiert: %06lu\n", (unsigned long)*pin);
+    return ok;
+}
+
+// ----------------------------------------------------------------
+// Display-Anzeigetoggles
+// ----------------------------------------------------------------
+
+bool storageStoreShowWifiPw(uint8_t val) {
+    nvs_handle_t handle;
+    if (!nvsOpen(&handle, NVS_READWRITE)) return false;
+    esp_err_t err = nvs_set_u8(handle, NVS_KEY_SHOW_WIFI, val);
+    if (err == ESP_OK) err = nvs_commit(handle);
+    nvs_close(handle);
+    logPrintf("[Storage] show_wifi_pw = %d\n", val);
+    return err == ESP_OK;
+}
+
+bool storageLoadShowWifiPw(uint8_t *val) {
+    nvs_handle_t handle;
+    if (!nvsOpen(&handle, NVS_READONLY)) return false;
+    esp_err_t err = nvs_get_u8(handle, NVS_KEY_SHOW_WIFI, val);
+    nvs_close(handle);
+    if (err == ESP_ERR_NVS_NOT_FOUND) return false;
+    return err == ESP_OK;
+}
+
+bool storageStoreShowPin(uint8_t val) {
+    nvs_handle_t handle;
+    if (!nvsOpen(&handle, NVS_READWRITE)) return false;
+    esp_err_t err = nvs_set_u8(handle, NVS_KEY_SHOW_PIN, val);
+    if (err == ESP_OK) err = nvs_commit(handle);
+    nvs_close(handle);
+    logPrintf("[Storage] show_pin = %d\n", val);
+    return err == ESP_OK;
+}
+
+bool storageLoadShowPin(uint8_t *val) {
+    nvs_handle_t handle;
+    if (!nvsOpen(&handle, NVS_READONLY)) return false;
+    esp_err_t err = nvs_get_u8(handle, NVS_KEY_SHOW_PIN, val);
+    nvs_close(handle);
+    if (err == ESP_ERR_NVS_NOT_FOUND) return false;
+    return err == ESP_OK;
 }
 
 // ----------------------------------------------------------------

@@ -51,12 +51,16 @@ bool storageLoadDeviceName(char *name, size_t maxLen);
 // ----------------------------------------------------------------
 bool storageStoreSettingsPin(uint32_t pin);
 bool storageLoadSettingsPin(uint32_t *pin);
+// Zufalls-PIN generieren (esp_random() % 1000000) und sofort persistieren.
+// *pin erhält den neuen Wert. Gibt false wenn NVS-Schreiben fehlschlug.
+bool storageGenerateAndStoreSettingsPin(uint32_t *pin);
 
 // ----------------------------------------------------------------
 // WLAN-Passwort — max. 63 Zeichen (WPA2-Limit), Buffer in main.cpp = 64 Bytes
 // ----------------------------------------------------------------
 bool storageStoreWifiPass(const char *pass);
 bool storageLoadWifiPass(char *pass, size_t maxLen);
+bool storageGenerateAndStoreWifiPass(char *pass, size_t maxLen);
 
 // ----------------------------------------------------------------
 // LoRa-Preset — uint8_t (0=Standard, 1=Reichweite, 2=Organisation, 3=Stadt)
@@ -91,6 +95,16 @@ void storageLogNvsStats();
 void storageWriteSeqNum(uint16_t seqNum);
 bool storageLoadSeqNum(uint16_t *seqNum);
 void storageClearSeqSlots();
+
+// ----------------------------------------------------------------
+// Display-Anzeigetoggle — NVS uint8, Default 1 (an).
+// NVS-Schlüssel: "show_wifi_pw" (WLAN-Passwort) / "show_pin" (Einstellungs-PIN).
+// Änderung wirkt erst ab dem nächsten Neustart.
+// ----------------------------------------------------------------
+bool storageStoreShowWifiPw(uint8_t val);
+bool storageLoadShowWifiPw(uint8_t *val);
+bool storageStoreShowPin(uint8_t val);
+bool storageLoadShowPin(uint8_t *val);
 
 // ----------------------------------------------------------------
 // Werksreset-Hilfsfunktionen

@@ -117,8 +117,8 @@ pio run -e heltec_v3 -t uploadfs
 
 **Benutzen:**
 1. Gerät einschalten
-2. WLAN-Zugangsdaten vom OLED oder Gehäuse-Aufkleber ablesen und verbinden —
-   oder QR-Code auf dem Aufkleber scannen (öffnet direkt `http://192.168.4.1`)
+2. WLAN-Zugangsdaten (SSID + Passwort) vom Display ablesen — das Gerät zeigt
+   sie 60 Sekunden lang nach jedem Start an
 3. Browser öffnet Chat-Interface
 4. Fertig
 

@@ -14,6 +14,8 @@ extern char wifiSSID[32];
 extern char wifiPass[64];
 extern uint8_t loraPreset;
 extern bool autoReplyEnabled;
+extern uint8_t showWifiPw;
+extern uint8_t showSettingsPin;
 extern ChannelPsk channelPsks[];
 extern uint8_t channelPskCount;
 extern void reloadChannelPsks();
@@ -77,9 +79,11 @@ void setupConfigRoutes(AsyncWebServer &server) {
             portalLog(req, 403); req->send(403); return;
         }
         JsonDocument doc;
-        doc["name"]   = deviceName;
-        doc["preset"] = loraPreset;
-        doc["autoReply"] = autoReplyEnabled;
+        doc["name"]            = deviceName;
+        doc["preset"]          = loraPreset;
+        doc["autoReply"]       = autoReplyEnabled;
+        doc["showWifiPw"]      = (bool)(showWifiPw != 0);
+        doc["showSettingsPin"] = (bool)(showSettingsPin != 0);
 
         char channelNames[MAX_CHANNELS][CHANNEL_NAME_MAX + 1];
         uint8_t channelCount = 0;
@@ -272,6 +276,32 @@ void setupConfigRoutes(AsyncWebServer &server) {
         }
         autoReplyEnabled = doc["enabled"] | false;
         logPrintf("[Config] Auto-Reply (RSSI-Echo): %s\n", autoReplyEnabled ? "an" : "aus");
+        portalLog(req, 200); req->send(200, "application/json", "{\"ok\":true}");
+    });
+
+    server.on("/config/set/displaytoggle", HTTP_POST, [](AsyncWebServerRequest *req) {},
+    nullptr, [](AsyncWebServerRequest *req, uint8_t *data, size_t len, size_t, size_t) {
+        if (!req->hasHeader("X-Pin") ||
+            (uint32_t)req->header("X-Pin").toInt() != settingsPin) {
+            portalLog(req, 403); req->send(403); return;
+        }
+        JsonDocument doc;
+        if (deserializeJson(doc, data, len) != DeserializationError::Ok) {
+            portalLog(req, 400); req->send(400); return;
+        }
+        const char *field = doc["field"];
+        if (!field) { portalLog(req, 400); req->send(400, "text/plain", "field fehlt"); return; }
+        bool show = doc["show"] | true;
+        uint8_t val = show ? 1 : 0;
+        if (strcmp(field, "wifi_pw") == 0) {
+            storageStoreShowWifiPw(val);
+            showWifiPw = val;
+        } else if (strcmp(field, "settings_pin") == 0) {
+            storageStoreShowPin(val);
+            showSettingsPin = val;
+        } else {
+            portalLog(req, 400); req->send(400, "text/plain", "Unbekanntes field"); return;
+        }
         portalLog(req, 200); req->send(200, "application/json", "{\"ok\":true}");
     });
 
