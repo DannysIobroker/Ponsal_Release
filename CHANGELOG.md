@@ -5,7 +5,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/)
 
 ---
 
-## [Unveröffentlicht] — fix/wifi-random-password
+## [0.2.0] — 2026-07-01
 
 ### Sicherheit
 - WLAN-Passwort wird jetzt beim ersten Boot zufällig generiert (esp_random(),
