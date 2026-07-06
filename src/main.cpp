@@ -446,6 +446,9 @@ void setup() {
         while (true) { delay(100); }
     }
     logPrintf(" OK\n");
+
+    loraStartContinuousReceive();
+    logPrintf("[LoRa] Permanent-RX aktiv (interrupt-basiert)\n");
     // Kein displayStatus hier — Tick übernimmt nach Boot-Sequenz
 }
 
@@ -526,10 +529,8 @@ void loop() {
     }
 
     if (!pskLoaded) {
-        // Queue-Abarbeitung auch ohne PSK — Fix 2026-06-25 (Pairing-Bug):
-        // Ohne diesen Block wurde ECDH_RESP nie gesendet, weil der frühere
-        // Early-Return die Queue nie erreichte. QUEUE_PAIRING-Pakete müssen
-        // auch im unkonfigurierten Zustand gesendet werden können.
+        // Chip ist permanent im interrupt-basierten RX (loraStartContinuousReceive im setup).
+        // Diese Block läuft jede Loop-Iteration (~20ms), kein blocking loraReceive.
         pairingTick();
         if (loraDutyCycleRemainingMs() == 0 && sendQueueCount > 0) {
             SendQueueEntry &front = sendQueue[0];
@@ -538,39 +539,55 @@ void loop() {
                 logPrintf("[MeshQ] PAIRING gesendet — OK (Wartezeit: %lus)\n",
                     (millis() - front.enqueuedAt) / 1000);
                 removeQueueFront();
-            } else {
+            } else if (qr != LORA_SEND_DUTYCYCLE) {
                 logPrintf("[MeshQ] PAIRING senden fehlgeschlagen: %d\n", qr);
             }
         }
-        // Polling-Loop: 10 × 150ms statt einmal 1500ms/7500ms blockieren.
-        // Button und Display werden so alle 150ms aktualisiert — Pairing-Hinweis
-        // erscheint innerhalb von 3,15s statt erst nach 10s (SX1262-Default).
-        uint8_t bufNoPsk[PACKET_MAX];
-        int resNoPsk = -1;
-        for (int _s = 0; _s < 10 && resNoPsk <= 0; _s++) {
-#ifdef BUTTON_PIN
-            handleButtonTick();
-#endif
-            {
-                DisplayContext dctx;
-                dctx.ssid            = wifiSSID;
-                dctx.wifiPass        = wifiPass;
-                dctx.activeChannel   = activeChannel;
-                dctx.pskLoaded       = pskLoaded;
-                dctx.unreadMessages  = 0;
-                dctx.dutyCycleMs     = 0;
-                dctx.settingsPin     = settingsPin;
-                dctx.showWifiPw      = showWifiPw != 0;
-                dctx.showSettingsPin = showSettingsPin != 0;
-                displayTick(dctx);
+
+        PairingStatus pst0;
+        pairingGetStatus(&pst0);
+
+        // Display-Override: aktives Pairing verhindert dass displayTick()
+        // die Pairing-Statusmeldungen von pairingTick()→displayStatus() überschreibt.
+        {
+            bool pairingActive = (pst0.state != PAIR_IDLE && pst0.state != PAIR_ERROR);
+            static bool pairingActiveWas = false;
+            if (pairingActive && !pairingActiveWas) {
+                displaySetOverride(true);
+            } else if (!pairingActive && pairingActiveWas) {
+                displaySetOverride(false);
             }
-            resNoPsk = loraReceive(bufNoPsk, PACKET_MAX, 150);
+            pairingActiveWas = pairingActive;
         }
-        if (resNoPsk > 0) {
-            logPrintf("[LoRa] Paket empfangen (kein PSK), Länge: %d, RSSI: %.0f\n",
-                resNoPsk, loraRSSI());
-            if (resNoPsk >= PAIRING_HEADER_LEN && bufNoPsk[0] == PAIRING_MAGIC) {
-                pairingHandlePacket(bufNoPsk, resNoPsk);
+
+#ifdef BUTTON_PIN
+        handleButtonTick();
+#endif
+        {
+            DisplayContext dctx;
+            dctx.ssid            = wifiSSID;
+            dctx.wifiPass        = wifiPass;
+            dctx.activeChannel   = activeChannel;
+            dctx.pskLoaded       = pskLoaded;
+            dctx.unreadMessages  = 0;
+            dctx.dutyCycleMs     = 0;
+            dctx.settingsPin     = settingsPin;
+            dctx.showWifiPw      = showWifiPw != 0;
+            dctx.showSettingsPin = showSettingsPin != 0;
+            displayTick(dctx);
+        }
+
+        delay(20);
+
+        if (loraPacketAvailable()) {
+            uint8_t bufNoPsk[PACKET_MAX];
+            int resNoPsk = loraReadPacketNonBlocking(bufNoPsk, PACKET_MAX);
+            if (resNoPsk > 0) {
+                logPrintf("[LoRa] Paket empfangen (kein PSK), Länge: %d, RSSI: %.0f\n",
+                    resNoPsk, loraRSSI());
+                if (resNoPsk >= PAIRING_HEADER_LEN && bufNoPsk[0] == PAIRING_MAGIC) {
+                    pairingHandlePacket(bufNoPsk, resNoPsk);
+                }
             }
         }
         return;
@@ -659,9 +676,31 @@ void loop() {
     handleButtonTick();
 #endif
 
-    // ── LoRa-Empfang ────────────────────────────────────────────
+    // ── Display-Override für aktives Pairing (Geber) ────────────
+    // verhindert dass displayTick() pairingTick()→displayStatus() überschreibt.
+    {
+        PairingStatus pst;
+        pairingGetStatus(&pst);
+        bool pairingWants = (pst.state != PAIR_IDLE &&
+                             pst.state != PAIR_GIVER_DONE &&
+                             pst.state != PAIR_RECEIVER_DONE &&
+                             pst.state != PAIR_ERROR);
+        static bool pairingWasActive = false;
+        if (pairingWants && !pairingWasActive) {
+            displaySetOverride(true);
+            pairingWasActive = true;
+        } else if (!pairingWants && pairingWasActive) {
+            displaySetOverride(false);
+            pairingWasActive = false;
+        }
+    }
+
+    // ── LoRa-Empfang (interrupt-basiert, permanent) ──────────────
+    // Chip ist permanent im RX-Modus seit setup(). loraSend() ruft
+    // radio.startReceive() nach jedem TX/CAD-Fail auf.
+    delay(20);
     uint8_t buf[PACKET_MAX];
-    int result = loraReceive(buf, PACKET_MAX);
+    int result = loraPacketAvailable() ? loraReadPacketNonBlocking(buf, PACKET_MAX) : 0;
     if (result > 0) {
         logPrintf("[LoRa] Paket empfangen, Länge: %d, RSSI: %.0f\n",
             result, loraRSSI());

@@ -167,6 +167,7 @@ LoraSendResult loraSend(const uint8_t *data, size_t len) {
 
     // 2. Kanal auf Aktivität prüfen
     if (!channelClearToSend()) {
+        radio.startReceive();  // CAD hinterlässt Chip im Standby → zurück in permanent RX
         return LORA_SEND_CHANNEL_BUSY;
     }
 
@@ -175,6 +176,8 @@ LoraSendResult loraSend(const uint8_t *data, size_t len) {
     int state = radio.transmit(data, len);
     unsigned long airtime = millis() - sendStart;
     lastAirtimeMs = airtime;
+
+    radio.startReceive();  // TX hinterlässt Chip im Standby → zurück in permanent RX
 
     if (state != RADIOLIB_ERR_NONE) {
         logPrintf("[LoRa HAL] Transmit-Fehler state=%d\n", state);
@@ -261,4 +264,48 @@ uint8_t loraGetPreset() {
 
 uint8_t loraGetDutyCycleLimit() {
     return PRESETS[currentPreset].dutyCycleLimitPercent;
+}
+
+// ── Interrupt-basierter Empfang ──────────────────────────────────
+
+static volatile bool loraPacketFlag = false;
+
+void IRAM_ATTR loraRxDoneISR() {
+    loraPacketFlag = true;
+}
+
+void loraStartContinuousReceive() {
+    loraPacketFlag = false;   // stale Flag aus Normalbetrieb löschen
+    radio.setPacketReceivedAction(loraRxDoneISR);
+    radio.startReceive();
+}
+
+void loraStopContinuousReceive() {
+    radio.clearPacketReceivedAction();  // detachInterrupt
+    radio.standby();
+    loraPacketFlag = false;
+}
+
+bool loraPacketAvailable() {
+    return loraPacketFlag;
+}
+
+int loraReadPacketNonBlocking(uint8_t *buf, size_t maxLen) {
+    loraPacketFlag = false;
+    int len = (int)radio.getPacketLength();
+    // len==0 nach TxDone-Spurious-Fire oder leerem RxDone-Event
+    if (len <= 0 || (size_t)len > maxLen) {
+        radio.startReceive();
+        return -1;
+    }
+    int state = radio.readData(buf, len);
+    lastSNR = (int)round(radio.getSNR());
+    logPrintf("[LoRa HAL] NonBlocking Empfangen, len=%d, RSSI=%.0f, SNR=%+d\n",
+              len, radio.getRSSI(), lastSNR);
+    radio.startReceive();
+    return (state == RADIOLIB_ERR_NONE) ? len : -1;
+}
+
+void loraEnsureRxMode() {
+    radio.startReceive();
 }

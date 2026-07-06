@@ -61,3 +61,24 @@ uint8_t loraGetPreset();
 // Duty-Cycle-Limit des aktuell aktiven Presets in Prozent
 // (Standard/Reichweite/Stadt = 1, Organisation = 10)
 uint8_t loraGetDutyCycleLimit();
+
+// ── Interrupt-basierter Empfang (Pairing-Modus) ─────────────────
+// Setzt Radio in kontinuierlichen RX + registriert ISR.
+// loraPacketFlag wird vorher auf false gesetzt (stale-Flag-Schutz).
+void loraStartContinuousReceive();
+
+// Beendet kontinuierlichen RX (clearPacketReceivedAction + standby).
+void loraStopContinuousReceive();
+
+// True wenn ISR ein fertiges Paket gemeldet hat (non-blocking).
+bool loraPacketAvailable();
+
+// Liest das Paket, das die ISR gemeldet hat.
+// Setzt Radio danach sofort in startReceive() zurück.
+// Rückgabe: Paketlänge, oder -1 bei Fehler/Spurious-TxDone-Fire.
+int  loraReadPacketNonBlocking(uint8_t *buf, size_t maxLen);
+
+// Stellt sicher dass der Chip im RX-Modus ist (nach CAD-Fehler oder
+// gescheitertem loraSend im Pairing-Kontext aufrufen).
+// Kein Einfluss auf loraPacketFlag.
+void loraEnsureRxMode();
