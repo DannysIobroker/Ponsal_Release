@@ -5,7 +5,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/)
 
 ---
 
-## [0.2.0] — 2026-07-01
+## [0.2.0] — 2026-07-06
 
 ### Sicherheit
 - WLAN-Passwort wird jetzt beim ersten Boot zufällig generiert (esp_random(),
@@ -25,9 +25,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/)
 ### Behoben
 - Display blieb nach Werksreset / erstem Boot ohne konfigurierten Kanal
   dauerhaft dunkel (displayTick() wurde im !pskLoaded-Zweig nie aufgerufen)
-- Button-Reaktion und Display-Updates waren auf Heltec V3 bis zu 7,5 Sekunden
-  verzögert (loraReceive() auf SX1262 blockierte ohne Timeout-Parameter bis
-  zu 500% der LoRa-Airtime)
+- Button-Reaktion und Display-Updates waren bis zu 7,5 Sekunden verzögert:
+  loraReceive() blockierte den Loop auf SX1262 bis zu 7500ms (500% der
+  LoRa-Airtime bei SF9/255 Byte). Fix: Chip bleibt ab setup() dauerhaft im
+  interrupt-basierten RX-Modus — loraReceive() wird im normalen Loop nicht
+  mehr aufgerufen. loraSend() stellt continuous RX nach jedem Send automatisch
+  wieder her (nach CAD und nach radio.transmit()). Gilt für beide Hardware-
+  Varianten (SX1262 und SX1276)
 
 ---
 
