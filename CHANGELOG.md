@@ -5,6 +5,20 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/)
 
 ---
 
+## [0.2.1] — 2026-07-07
+
+### Behoben
+- NVS-Auto-Erase bei `ESP_ERR_NVS_NO_FREE_PAGES` / `ESP_ERR_NVS_NEW_VERSION_FOUND`
+  war vollständig still (kein Log, keine Anzeige). Verstößt gegen Spec §7 ("nie
+  still versagen"). Fix: Config-Partition zeigt jetzt 5 Sekunden OLED-Meldung
+  "Daten verloren! / Neu einrichten / erforderlich" sowie `logPrintf` außerhalb
+  des DEVELOPMENT-Guards. msgstore-Partition loggt ebenfalls (kein OLED, da
+  Funktionsfähigkeit nicht beeinträchtigt). Auto-Erase selbst bleibt erhalten —
+  keine Alternative bei diesen NVS-Fehlercodes. Anzeigepfad isoliert testbar
+  über `POST /debug/simulate-nvs-erase` (nur DEVELOPMENT-Builds)
+
+---
+
 ## [0.2.0] — 2026-07-06
 
 ### Sicherheit

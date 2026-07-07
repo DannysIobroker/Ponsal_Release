@@ -551,7 +551,7 @@ static bool msgNvsOpen(nvs_handle_t *handle, nvs_open_mode_t mode) {
 void storageInitMsgPartition() {
     esp_err_t ret = nvs_flash_init_partition(NVS_MSG_PARTITION);
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
-        logPrintf("[Storage] msgstore beschädigt — wird neu initialisiert\n");
+        logPrintf("[Storage] msgstore beschaedigt — Auto-Erase. Chatverlauf und Sequenznummern verloren.\n");
         nvs_flash_erase_partition(NVS_MSG_PARTITION);
         nvs_flash_init_partition(NVS_MSG_PARTITION);
     } else if (ret != ESP_OK) {

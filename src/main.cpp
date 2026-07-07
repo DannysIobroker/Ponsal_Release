@@ -288,6 +288,16 @@ void handleButtonTick() {
 #endif
 
 // ----------------------------------------------------------------
+// NVS-Erase-Warnanzeige — ausgelagert für isolierten Test per Debug-Route
+// ----------------------------------------------------------------
+static void showNvsEraseWarning() {
+    displaySetOverride(true);
+    displayStatus("Daten verloren!", "Neu einrichten", "erforderlich", nullptr);
+    delay(5000);
+    displaySetOverride(false);
+}
+
+// ----------------------------------------------------------------
 // Setup
 // ----------------------------------------------------------------
 void setup() {
@@ -309,9 +319,10 @@ void setup() {
 
     esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
-        logPrintf("[Storage] NVS beschädigt — wird neu initialisiert\n");
+        logPrintf("[Storage] NVS (Config) beschaedigt — Auto-Erase. PSK, Name, PIN, Preset verloren.\n");
         nvs_flash_erase();
         ret = nvs_flash_init();
+        showNvsEraseWarning();
     }
     if (ret != ESP_OK) {
         logPrintf("[Storage] NVS Init fehlgeschlagen: %d\n", ret);
@@ -842,6 +853,13 @@ void webTask(void *pvParameters) {
         snprintf(resp, sizeof(resp), "SeqNum auf %u gesetzt", val);
         request->send(200, "text/plain", resp);
         logPrintf("[Debug] SeqNum manuell auf %u gesetzt\n", val);
+    });
+
+    server.on("/debug/simulate-nvs-erase", HTTP_POST, [](AsyncWebServerRequest *req) {
+        // Testet OLED+Log-Pfad isoliert — kein echtes Erase. Blockiert Web-Task 5s (dev-only).
+        logPrintf("[Debug] Simulate: NVS-Erase-Warnung (kein echtes Erase)\n");
+        showNvsEraseWarning();
+        req->send(200, "text/plain", "OK — Warnung simuliert (5s OLED)");
     });
 
     server.on("/debug/fillmessages", HTTP_POST, [](AsyncWebServerRequest *request) {
