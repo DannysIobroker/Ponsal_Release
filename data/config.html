@@ -275,15 +275,16 @@
     </div>
   </div>
 
-  <!-- 5. PIN ändern -->
+  <!-- 5. Zugang -->
   <div class="card">
-    <h2>Einstellungs-PIN ändern</h2>
+    <h2>Zugang</h2>
+    <h3 style="font-size:0.85rem;color:#888;margin:0 0 12px 0;">Einstellungs-PIN</h3>
     <label>Neue PIN (6 Ziffern)</label>
     <input type="password" inputmode="numeric" maxlength="6" id="newPin" placeholder="——————">
     <label>PIN wiederholen</label>
     <input type="password" inputmode="numeric" maxlength="6" id="newPinRepeat" placeholder="——————">
     <button class="btn btn-secondary" onclick="changePin()">PIN ändern</button>
-    <div style="margin-top:14px;border-top:1px solid #333;padding-top:12px;">
+    <div style="margin-top:14px;border-top:1px solid #222;padding-top:12px;margin-bottom:0;">
       <label style="display:flex;align-items:center;cursor:pointer;margin-bottom:0;">
         <input type="checkbox" id="showSettingsPinToggle" style="width:auto;margin:0 10px 0 0;" onchange="onShowSettingsPinToggle()">
         Einstellungs-PIN beim Start auf Display anzeigen
@@ -292,11 +293,7 @@
         Wirkt erst nach dem nächsten Neustart.
       </p>
     </div>
-  </div>
-
-  <!-- 6. WLAN-Passwort -->
-  <div class="card">
-    <h2>WLAN-Passwort</h2>
+    <h3 style="font-size:0.85rem;color:#888;margin:20px 0 12px 0;border-top:1px solid #333;padding-top:16px;">WLAN-Passwort</h3>
     <label>Neues Passwort</label>
     <input type="password" id="wifiPassNew" placeholder="Mindestens 8 Zeichen" autocomplete="new-password">
     <label>Wiederholen</label>
@@ -307,7 +304,7 @@
       &#9888; Nach dem Speichern verlierst du die WLAN-Verbindung.<br>
       Verbinde dich erneut mit dem neuen Passwort.
     </p>
-    <div style="margin-top:14px;border-top:1px solid #333;padding-top:12px;">
+    <div style="margin-top:14px;border-top:1px solid #222;padding-top:12px;">
       <label style="display:flex;align-items:center;cursor:pointer;margin-bottom:0;">
         <input type="checkbox" id="showWifiPwToggle" style="width:auto;margin:0 10px 0 0;" onchange="onShowWifiPwToggle()">
         WLAN-Passwort beim Start auf Display anzeigen
@@ -318,32 +315,27 @@
     </div>
   </div>
 
-  <!-- 7. Reichweite testen -->
+  <!-- 6. Diagnose -->
   <div class="card">
-    <h2>Reichweite testen</h2>
+    <h2>Diagnose</h2>
     <label style="display:flex;align-items:center;cursor:pointer;margin-bottom:0;">
       <input type="checkbox" id="autoReplyToggle" style="width:auto;margin:0 10px 0 0;" onchange="onAutoReplyToggle()">
       Automatisch antworten (für Reichweitentests)
     </label>
     <p style="color:#555;font-size:0.75rem;margin-top:8px;margin-bottom:0;">
-      Antwortet auf jede empfangene Nachricht automatisch mit der gemessenen
-      Signalstärke. Für Reichweitentests mit zwei Geräten — beide Geräte
-      tauschen sich dann fortlaufend aus (unter Einhaltung der
-      Sendepause). Wird nicht gespeichert — nach Neustart wieder aus.
+      Antwortet automatisch mit der gemessenen Signalstärke, wenn eine Nachricht
+      genau &#x27;antworte&#x27; lautet. Wird nicht gespeichert — nach Neustart wieder aus.
     </p>
-  </div>
-
-  <!-- 7. Entwickler -->
-  <div class="card">
-    <h2>Entwickler</h2>
-    <label style="display:flex;align-items:center;cursor:pointer;margin-bottom:0;">
-      <input type="checkbox" id="debugToggle" style="width:auto;margin:0 10px 0 0;" onchange="onDebugToggle()">
-      Technische Details im Chat anzeigen
-    </label>
-    <p style="color:#555;font-size:0.75rem;margin-top:8px;margin-bottom:0;">
-      Zeigt Signalstärke und Sendezeit bei jeder Nachricht
-      sowie die aktuelle Sendepause.
-    </p>
+    <div style="border-top:1px solid #222;margin-top:16px;padding-top:16px;">
+      <label style="display:flex;align-items:center;cursor:pointer;margin-bottom:0;">
+        <input type="checkbox" id="debugToggle" style="width:auto;margin:0 10px 0 0;" onchange="onDebugToggle()">
+        Technische Details im Chat anzeigen
+      </label>
+      <p style="color:#555;font-size:0.75rem;margin-top:8px;margin-bottom:0;">
+        Zeigt Signalstärke und Sendezeit bei jeder Nachricht
+        sowie die aktuelle Sendepause.
+      </p>
+    </div>
   </div>
 
 </div>
@@ -483,7 +475,7 @@ function renderChannels(channels) {
   list.innerHTML = channels.map((ch, i) =>
     `<div class="channel-row" style="flex-direction:column;align-items:flex-start;">
       <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
-        <span class="channel-name">${escHtml(ch.name)}${i === 0 ? '<span class="channel-active">aktiv</span>' : ''}</span>
+        <span class="channel-name">${escHtml(ch.name)}${ch.name === (localStorage.getItem('px_active') || '') ? '<span class="channel-active">aktiv</span>' : ''}</span>
         <div style="display:flex;">
           <button class="btn-small" onclick="showPsk('${escHtml(ch.name)}')">Netzwerkschlüssel anzeigen</button>
           <button class="btn-small" style="margin-left:6px;" onclick="deleteChannel('${escHtml(ch.name)}')">Löschen</button>
@@ -619,6 +611,7 @@ async function deleteChannel(name) {
 // Funk-Profil speichern
 // ----------------------------------------------------------------
 async function savePreset() {
+  if (!confirm('Funk-Profil wirklich ändern? Geräte mit dem bisherigen Profil können danach nicht mehr erreicht werden.')) return;
   const preset = parseInt(document.getElementById('presetSelect').value);
   await postConfig('/config/set/preset', {preset});
 }
@@ -646,6 +639,7 @@ async function changeWifiPass() {
   st.className = 'status';
   st.textContent = '';
   if (!p1) { st.className='status err'; st.textContent='Bitte Passwort eingeben'; return; }
+  if (p1.length < 8) { st.className='status err'; st.textContent='Passwort muss mindestens 8 Zeichen lang sein'; return; }
   if (p1 !== p2) { st.className='status err'; st.textContent='Passwörter stimmen nicht überein'; return; }
   try {
     const r = await fetch('/config/set/wifipass', {
