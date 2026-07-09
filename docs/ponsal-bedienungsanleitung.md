@@ -7,6 +7,9 @@ layout: default
 
 *Gerät nach dem Ponsal-Protokoll · Stand 2026-07-09*
 
+*Hintergründe zu LoRa, Mesh-Funktion, Duty Cycle und Funk-Profilen:
+[Hintergrund — wie ProjektX funktioniert](hintergrund.html)*
+
 ---
 
 ## Was ist ProjektX

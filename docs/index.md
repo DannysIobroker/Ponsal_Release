@@ -3,9 +3,7 @@ title: ProjektX Dokumentation
 layout: default
 ---
 
-# ProjektX — Dokumentation
+# ProjektX Dokumentation
 
-*Stand 2026-07-09*
-
-- [Bedienungsanleitung](ponsal-bedienungsanleitung.md) — Einrichtung, Chat-Oberfläche,
-  Konfiguration, Pairing, Werksreset
+- [Bedienungsanleitung](ponsal-bedienungsanleitung.html) — Ersteinrichtung, Pairing, tägliche Nutzung, Werksreset
+- [Hintergrund — wie ProjektX funktioniert](hintergrund.html) — LoRa, Mesh-Weiterleitung, Duty Cycle, Funk-Profile, Kanal-Konzept
