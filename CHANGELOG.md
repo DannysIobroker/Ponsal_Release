@@ -5,6 +5,25 @@ Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/)
 
 ---
 
+## [Unveröffentlicht]
+
+### Hinzugefügt
+- Heltec WiFi LoRa 32 V4 als dritte unterstützte Hardware-Variante
+  (`HARDWARE_HELTEC_V4`, Environment `heltec_v4_dev`, kein `_prod` bisher).
+  LoRa-, OLED-, Vext- und Button-Pinbelegung identisch zu V3, empirisch
+  gegen echte Hardware verifiziert (LoRa: echtes ECDH-Pairing über Funk mit
+  einem V3-Gerät). Akku-Spannungsteiler weicht von V3 ab (×4.9 statt ×2),
+  gegen echten Akku + Multimeter kalibriert. Ladeanzeige (`BAT_CHRG_PIN`)
+  auf V4 nicht verfügbar — keine Quelle gefunden.
+- `BAT_DIVIDER_RATIO`-Define in `hardware_config.h` — Akku-Formel war vorher
+  hart auf V3s Teiler-Verhältnis in `display_hal.cpp` einprogrammiert
+
+### Geändert
+- `lora_hal.cpp`: SX1262-Codepfad (radio-Objekt, Preset-Init, `loraReceive`)
+  gilt jetzt für `HARDWARE_HELTEC_V3 || HARDWARE_HELTEC_V4`
+
+---
+
 ## [0.2.1] — 2026-07-07
 
 ### Behoben

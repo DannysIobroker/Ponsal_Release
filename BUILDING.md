@@ -12,6 +12,7 @@
 | `heltec_v3` | Heltec WiFi LoRa 32 V3 (ESP32-S3 + SX1262 + OLED) |
 | `heltec_v3_prod` | Heltec WiFi LoRa 32 V3 — Production (kein Serial, kein Debug) |
 | `esp32_sx1276` | ESP32-WROOM-32U + RFM95W (SX1276) |
+| `heltec_v4_dev` | Heltec WiFi LoRa 32 V4 (ESP32-S3 + SX1262 + OLED) — kein Production-Environment bisher |
 
 ## Firmware flashen
 

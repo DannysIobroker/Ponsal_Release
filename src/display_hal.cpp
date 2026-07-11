@@ -121,12 +121,16 @@ static void updateBattery() {
     int raw = analogRead(BAT_ADC_PIN);
     digitalWrite(BAT_ADC_CTRL, LOW);
 
-    // 12-bit ADC, 3.3V Ref, Teiler 1:2 → Vbat = ADC_V × 2
-    cachedBatV = (raw / 4095.0f) * 3.3f * 2.0f;
+    // 12-bit ADC, 3.3V Ref, Teiler-Ratio pro Hardware (hardware_config.h)
+    cachedBatV = (raw / 4095.0f) * 3.3f * BAT_DIVIDER_RATIO;
 
+#ifdef BAT_CHRG_PIN
     // TP4054 CHRG: open-drain, LOW = lädt
     pinMode(BAT_CHRG_PIN, INPUT_PULLUP);
     cachedCharging = (digitalRead(BAT_CHRG_PIN) == LOW);
+#else
+    cachedCharging = false;  // Ladestatus auf dieser Hardware nicht verfügbar
+#endif
 
     logPrintf("[Bat] %.2fV raw=%d chrg=%d\n", cachedBatV, raw, (int)cachedCharging);
 }

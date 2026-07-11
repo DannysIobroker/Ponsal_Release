@@ -10,8 +10,8 @@
   static SX1276 radio = new Module(LORA_NSS, LORA_DIO0, LORA_RST, LORA_DIO1, loraSPI);
 #endif
 
-// ── SX1262 (Heltec V3) ────────────────────────────────────────
-#ifdef HARDWARE_HELTEC_V3
+// ── SX1262 (Heltec V3 / V4 — gleicher Chip, gleiche Pinrollen) ─
+#if defined(HARDWARE_HELTEC_V3) || defined(HARDWARE_HELTEC_V4)
   static SX1262 radio = new Module(LORA_NSS, LORA_DIO1, LORA_RST, LORA_BUSY);
 #endif
 
@@ -80,7 +80,7 @@ static bool applyPreset(uint8_t preset) {
         radio.explicitHeader();
     }
 #endif
-#ifdef HARDWARE_HELTEC_V3
+#if defined(HARDWARE_HELTEC_V3) || defined(HARDWARE_HELTEC_V4)
     state = radio.begin(cfg.freqMHz, cfg.bwKHz, cfg.sf, cfg.cr, 0x12, 14, 8);
     if (state == RADIOLIB_ERR_NONE) {
         // setDio2AsRfSwitch(true) zwingend nach begin() auf SX1262 (Heltec V3):
@@ -225,7 +225,7 @@ int loraReceive(uint8_t *buf, size_t maxLen, uint32_t timeoutMs) {
     }
     int state = radio.receive(buf, maxLen, timeoutMs);
 #endif
-#ifdef HARDWARE_HELTEC_V3
+#if defined(HARDWARE_HELTEC_V3) || defined(HARDWARE_HELTEC_V4)
     // timeoutMs=0: RadioLib berechnet Timeout automatisch (500% der Airtime
     // bei 255B/SF9 ≈ 7500ms). Für Polling-Loops expliziten Timeout übergeben.
     int state;

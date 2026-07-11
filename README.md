@@ -93,18 +93,18 @@ Sprachnachrichten, Bilder, GPS-Tracking, Internet-Bridge, automatische Updates, 
 
 ## ProjektX — Referenzimplementierung
 
-ProjektX ist das erste Ponsal-kompatible Gerät. Hardware-Basis: Heltec WiFi LoRa 32 V3 (ESP32-S3 + SX1262 + 128×64 OLED).
+ProjektX ist das erste Ponsal-kompatible Gerät. Hardware-Basis: Heltec WiFi LoRa 32 V3 (ESP32-S3 + SX1262 + 128×64 OLED). Heltec WiFi LoRa 32 V4 (gleicher Funkchip, ESP32-S3 mit PSRAM) wird ebenfalls unterstützt.
 
 Kernversprechen: Strom rein — sofort einsatzbereit. Nutzer verbinden sich per WLAN und chatten über den Browser. Keine App, kein Konto, kein Internet.
 
 ### Hardware-Agnostizität bewiesen
 
-ESP32-WROOM-32U + SX1276 ↔ Heltec WiFi LoRa 32 V3 (ESP32-S3 + SX1262) — zwei verschiedene Mikrocontroller-Generationen, zwei verschiedene LoRa-Chips, ein Protokoll.
+ESP32-WROOM-32U + SX1276 ↔ Heltec WiFi LoRa 32 V3 ↔ Heltec WiFi LoRa 32 V4 (beide ESP32-S3 + SX1262) — mehrere Mikrocontroller-Generationen, zwei verschiedene LoRa-Chip-Familien, ein Protokoll.
 
 ### Schnellstart
 
 **Hardware:**
-- Heltec WiFi LoRa 32 V3 (~25€)
+- Heltec WiFi LoRa 32 V3 (~25€) — empfohlen, am längsten im Feld erprobt
 - USB-C Kabel + Stromversorgung
 
 **Firmware flashen:**
@@ -114,6 +114,8 @@ cd Ponsal_Release
 pio run -e heltec_v3 -t upload
 pio run -e heltec_v3 -t uploadfs
 ```
+
+Heltec WiFi LoRa 32 V4 wird ebenfalls unterstützt (`heltec_v4_dev`-Environment) — Pinbelegung für LoRa, OLED, Button und Akkuspannung ist gegen echte Hardware verifiziert, aber neuer als V3 und noch ohne eigenes Production-Environment.
 
 **Benutzen:**
 1. Gerät einschalten

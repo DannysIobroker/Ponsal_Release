@@ -126,7 +126,7 @@ https://www.gnu.org/licenses/lgpl-3.0.txt
 - **Version:** 2.5.17
 - **Lizenz:** BSD 3-Clause
 - **Repo:** https://github.com/adafruit/Adafruit_SSD1306
-- **Nur für Heltec WiFi LoRa 32 V3 (ESP32-S3 + SSD1306 OLED)**
+- **Nur für Heltec WiFi LoRa 32 V3/V4 (ESP32-S3 + SSD1306 OLED)**
 
 ```
 Software License Agreement (BSD License)
@@ -164,7 +164,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 - **Version:** 1.12.6
 - **Lizenz:** BSD 2-Clause
 - **Repo:** https://github.com/adafruit/Adafruit-GFX-Library
-- **Nur für Heltec WiFi LoRa 32 V3 (ESP32-S3 + SSD1306 OLED)**
+- **Nur für Heltec WiFi LoRa 32 V3/V4 (ESP32-S3 + SSD1306 OLED)**
 
 ```
 Software License Agreement (BSD License)
@@ -200,7 +200,7 @@ POSSIBILITY OF SUCH DAMAGE.
 - **Version:** 1.17.4
 - **Lizenz:** MIT
 - **Repo:** https://github.com/adafruit/Adafruit_BusIO
-- **Nur für Heltec WiFi LoRa 32 V3 (transitive Abhängigkeit von Adafruit SSD1306)**
+- **Nur für Heltec WiFi LoRa 32 V3/V4 (transitive Abhängigkeit von Adafruit SSD1306)**
 
 ```
 The MIT License (MIT)
