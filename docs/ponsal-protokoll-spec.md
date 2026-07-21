@@ -237,10 +237,15 @@ Paket empfangen
 → entschlüsseln → GCM Tag fehlgeschlagen → verwerfen
 → für eigene Weboberfläche anzeigen
 → NodeID in NachrichtID == eigene NodeID? → NICHT weiterleiten (Echo-Vermeidung)
-→ weiterleiten: Paket UNVERÄNDERT erneut senden, zufälliger Delay 0–1000ms
+→ weiterleiten: Paket UNVERÄNDERT in die Mesh Send Queue einreihen (12 Slots, gemeinsam mit eigenen
+  Nachrichten), zufälliger Delay 0–1000ms vor dem tatsächlichen Senden
 ```
 
-Bei `LORA_SEND_DUTYCYCLE` oder `LORA_SEND_CHANNEL_BUSY`: Weiterleitung still verworfen, kein Retry.
+**Korrektur 2026-07-21:** Vorherige Fassung dieses Abschnitts behauptete "Bei `LORA_SEND_DUTYCYCLE` oder `LORA_SEND_CHANNEL_BUSY`: Weiterleitung still verworfen, kein Retry" — das entsprach nicht (mehr) dem Code. Tatsächliches Verhalten über die Mesh Send Queue:
+- `LORA_SEND_DUTYCYCLE` / `LORA_SEND_CHANNEL_BUSY` führen NICHT zum sofortigen Verwerfen — der Eintrag bleibt in der Queue und wird in der nächsten Verarbeitungsrunde erneut versucht.
+- Weiterleitungen (RELAY) haben ein TTL von 5 Minuten ab Einreihung — erst wenn diese Zeit ohne erfolgreiches Senden verstreicht, wird der Eintrag verworfen.
+- Bei voller Queue (12/12) wird bei Bedarf der älteste RELAY-Eintrag verdrängt, um Platz für Neues zu schaffen (auch das ohne je gesendet worden zu sein).
+- Eigene Nachrichten (OWN) haben kein TTL und werden nie verdrängt — sie warten nötigenfalls unbegrenzt.
 
 ---
 
@@ -259,7 +264,7 @@ Europa, 868 MHz: 1% Duty Cycle gesetzlich vorgeschrieben. Maximale Sendeleistung
 | 2 Organisation | SF9 | 125 kHz | 869.525 MHz | 10% |
 | 3 Stadt | SF7 | 125 kHz | 868.0 MHz | 1% |
 
-CAD (Channel Activity Detection) ist vor jedem Senden implementiert.
+CAD (Channel Activity Detection) ist vor jedem Senden implementiert: 3 Versuche, Backoff 20–500ms zufällig. Ist der Kanal bei allen 3 Versuchen belegt, wird nicht gesendet (`LORA_SEND_CHANNEL_BUSY`, Retry über die Mesh Send Queue, siehe Abschnitt 11). Nur bei einem echten CAD-Scan-Fehler (weder "belegt" noch "frei" erkannt) wird trotzdem gesendet, damit ein CAD-Bug nicht das Gerät blockiert — das ist ein anderer Fall als "Kanal belegt".
 
 ---
 
